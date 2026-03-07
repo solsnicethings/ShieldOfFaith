@@ -1,0 +1,1 @@
+powershell -nologo -noninteractive -executionpolicy remotesigned -file "%~dpn0.ps1"

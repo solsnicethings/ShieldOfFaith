@@ -1,0 +1,60 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs32\lang9 Shield of Faith - User Guide\par
+\b\fs28 WORK IN PROGRESS\fs24\par
+\b0 This tool is intended to be free, disability friendly and easily understood. It is particularly intended to be useful to those who struggle with the light from their computer monitor.\par
+\ul Feedback on what works and doesn't work is appreciated.\ulnone\par
+(Ready made solutions and improvements are also appreciated, though I will only publish what I can verify as safe and sound.)\par
+The product has \ul basic functionality \ulnone at this point. For usefulness to more people, it needs to be customizable with colouring and font sizes. I hope to be able to deliver that eventually.\par
+\b\fs28 BASIC FUNCTIONALITY\b0\par
+\fs24 This program covers the screen with a translucent window.\par
+The button with the shield icon hides or shows that window, and you have a clickable bar (you can also use arrows or click buttons on its ends) to adjust the intensity. This helps darken the screen, reducing discomfort from the brighter colours, especially when they occur next to darker ones.\par
+\b One instance of Shield of Faith \b0 can only cover one monitor at a time. You can change which one by moving the control window to the target monitor and click "move shield to this monitor".\par
+\b\fs28 BASIC FUNCTIONALITY \b0 - \fs24 ShaderGlass.exe\par
+A similar effect can be achieved by running a version of ShaderGlass.exe, modified to be controlled via this program. You start/show and hide that program using the button that either says "Shader Glass app" or shows the ShaderGlass program icon (a monitor).\par
+ShaderGlass uses advanced graphics processing. Shield of Faith uses it to allow you to darken the screen with options to darken some colour components more than others.\par
+The effect on the screen's colour is slightly different from the one achieved by covering everything with a translucent window.\par
+\b One instance of Shield of Faith\b0  can only run one Shader Glass application at a time. You can adjust the location (and gain easy access to menus) of Shader Glass by clicking Window mode in Shield of Faith. You should be able to move Shader Glass to the desired monitor and return it to fullscreen with the same button. (I can't test as I have only one monitor.)\par
+\b\fs28 WARNING\fs24\par
+ShaderGlass\b0  is not developed or maintained by me, but I did examine and use the program a fair bit without issue before making this.\par
+The version of ShaderGlass that comes bundled with this program is altered by me, and will not keep up with changes to the proper ShaderGlass app.\par
+For clarity, the bundled executable is called \i ShaderGlassForShieldOfFaith.exe\i0\par
+\b\fs28 MULTIPLE MONITORS\par
+\b0\fs24 You could run multiple instances of shield of faith.\par
+You could also use the two methods of the program (its own window and the ShaderGlass app) simultaneously, placing each on a different monitor.\par
+If you run multiple instances, you may want to run each with a different configuration. You can create a shortcut for the program meant for each monitor, and use the command line options to give (at least one of) them a custom configuration file.\par
+With its default settings, Shield of Faith records information to its config file when you close it, so that it will next start with a similar setup. (You can also manually edit them.)\par
+\b\fs28 TIPS FOR TROUBLES\b0\par
+\fs24 You could run into a situation where you have darkened the screen too much.\par
+Certain parts of the operating system are not affected by this program, and will allow you to regain control in that situation:\par
+
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sa200\sl276\slmult1 If you hold down ALT and press TAB, you get the program selector menu, which will not be darkened. Moving your mouse cursor onto a window in that menu, you should be able to find an X button to close the program. Shield of Faith will close its own ShaderGlass process if it has started one.\par
+{\pntext\f1\'B7\tab}There may be communication issues between the two programs. Particularly if you make some manual adjustments inside the ShaderGlass app while it runs under Shield of Faith. Shield of Faith has a button to close the ShaderGlass app. Restarting the Shader Glass may help you regain control if something has gone confusingly wrong.\par
+
+\pard\sa200\sl276\slmult1\b\fs28 Customisation and configuration\par
+\b0\fs24 A .slang file (ShieldOfFaith.slang) is used to create the shader that ShaderGlass applies to the screen. You could edit that file, or create multiple, and make different configurations that load different files.\par
+An .sgp file (ShieldOfFaith.sgp) is used to set up ShaderGlass with correct settings. By default, Shader glass applies fancy retro-gaming modifications that make it look like you're playing on a TV from 1990. You could edit that file, or create multiple, and make different configurations that load different files.\par
+To govern whether or not ShaderGlass.exe darkens the mouse cursor, change the "Capture cursor" setting. For now, that is done by controlling the instructions in the .sgp-file. (CaptureCursor "0" would mean that it leaves the cursor be, CaptureCursor "1" means it will replace the system cursor with a darkened one.)\par
+You can also make such adjustments in the Shader Glass app directly at runtime. For easy access to its menus, you would use the window mode button to switch it out of fullscreen.\par
+More details on ShaderGlass are presently available at:\par
+{{\field{\*\fldinst{HYPERLINK https://mausimus.github.io/ShaderGlass/MANUAL.html }}{\fldrslt{https://mausimus.github.io/ShaderGlass/MANUAL.html\ul0\cf0}}}}\f0\fs24\par
+\b\fs28 Customisation and configuration - command line\par
+\b0\fs24 Implemented command line options:\par
+
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sa200\sl276\slmult1 --no-deploy (also: -nd): do not create missing configuration files (including sgp and slang files) in the program's %appdata% folder.\b\fs28\par
+{\pntext\f1\'B7\tab}\b0\fs24 --data <path to folder> (also: -ad, -d): use a specified folder instead of the program's %appdata% folder. This implicitly adds --no-deploy.\b\fs28\par
+{\pntext\f1\'B7\tab}\b0\fs24 --config <path to config file> (also: --settings, -cfg, -c, -s): use a specified configuration file for this session. The path can be relative to the data folder.\b\fs28\par
+
+\pard\sa200\sl276\slmult1 Customisation and configuration - configuration file\par
+\b0\fs24 See separate document.\b\fs28\par
+BUGS\b0\fs24\par
+I know of no outright bugs, but there are things that seem not to be possible, or within my ability:\par
+
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sa200\sl276\slmult1 The basic screen cover in Shield of Faith seems not to work perfectly on Windows 11. After a Windows update there were complaints that the cover didn't feel quite as darkening anymore, and also that it won't reliably cover discord.\fs22\par
+{\pntext\f1\'B7\tab}\fs24 The presence of a translucent overlay window (the normal shield of faith implementation) has been observed to cause trouble with how Virtual Box reads the mouse for its virtual computers. There are probably other programs that do mouse handling in a way that doesn't work well with shield of faith covering them.\fs22\par
+{\pntext\f1\'B7\tab}\fs24 ShaderGlass uses screen recording to render a darkened version of your desktop. (It can do more, but that is what Shield of Faith needs it for.)\fs22  This gives a very high quality recolouring, and it seems to be more reliable than the other method, but it has other problems.\par
+{\pntext\f1\'B7\tab}Shader Glass produces a yellow outline on the monitor. This is enforced by Windows. On Windows 10 it can \b not \b0 be disabled - according to ShaderGlass documentation.\par
+{\pntext\f1\'B7\tab}In order to apply its effect to your mouse cursor, ShaderGlass must take over rendering of it. This means that when windows renders something that ShaderGlass is not allowed to cover, you will not see the mouse cursor. (You can choose to let the operating system render the mouse cursor instead, and then you can use windows settings to pick a suitable colour. I have gone for #999999 to get grey with dark outline.)\par
+}
+ 

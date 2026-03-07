@@ -1,0 +1,295 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Sol.ShieldOfFaith
+{
+    public static class Program
+    {
+        const string DefaultAppDataSubfolder = @"Sol\Shield Of Faith";
+        
+      static public string DefaultAppDataLocation
+        {
+            get
+            {
+                var s = Environment.GetEnvironmentVariable("AppData");
+                if (string.IsNullOrEmpty(s))
+                    return null;
+                return Path.Combine(s, DefaultAppDataSubfolder);
+            }
+        }
+
+        static public System.IO.Compression.ZipArchive
+            EmbedCatalog = new System.IO.Compression.ZipArchive(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sol.ShieldOfFaith.Files.Catalog.zip")
+                , System.IO.Compression.ZipArchiveMode.Read);
+
+        static public ZipArchiveEntry GetEmbed(string path)
+            => EmbedCatalog.GetEntry(path);
+
+        static public IEnumerable<Tuple<string, ZipArchiveEntry>> GetEmbedsIn(string path, bool includeSublevels = false, bool includeFolders = false, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+        {
+            string pathb;
+            if (path.EndsWith("/"))
+                pathb = path.Replace('/', '\\');
+            else if (path.EndsWith("\\"))
+                pathb = path.Replace('\\', '/');
+            else
+            {
+                if (path.Contains("/"))
+                {
+                    path += "/";
+                    pathb = path.Replace('/', '\\');
+                }
+                else
+                {
+                    path += "\\";
+                    pathb = path.Replace('\\', '/');
+                }
+            }
+            foreach (var e in EmbedCatalog.Entries)
+            {
+                var p = e.FullName;
+                if (p.Length > path.Length && (p.StartsWith(path, stringComparison) || p.StartsWith(pathb, stringComparison)))
+                {
+                    if (includeFolders || !(p.EndsWith("/") || p.EndsWith("\\")))
+                    {
+                        var key = p.Substring(path.Length);
+                        if (!includeSublevels)
+                            foreach (var c in key)
+                                if (c == '/' || c == '\\')
+                                    goto next;
+                        yield return new Tuple<string, ZipArchiveEntry>(key, e);
+                    next:;
+                    }                        
+                }
+            }
+        }
+
+        static public Stream OpenEmbed(string path)
+            => GetEmbed(path).Open();
+
+        static public String ReadEmbed(string path)
+        {
+            using (var r = new StreamReader(OpenEmbed(path)))
+                return r.ReadToEnd();
+        }
+        static public String Read(this ZipArchiveEntry entry)
+        {
+            using (var r = new StreamReader(entry.Open()))
+                return r.ReadToEnd();
+        }
+
+        static public bool? TraceHighOrLow
+#if DEBUG
+            = true
+#endif
+            ;
+
+        static public void RecordEvent(this Composure cWin, string eventText, bool significantEvent = false)
+        {
+            if (TraceHighOrLow.HasValue && (significantEvent || TraceHighOrLow.Value))
+            {
+                    Events.Add(new Tuple<string, DateTime>(eventText, DateTime.Now));
+                    if (cWin != null && !cWin.IsDisposed)
+                    try
+                    {
+                        cWin.GrabEvents();
+                    }
+                    catch (InvalidOperationException) { }
+            }
+        }
+        
+        static public readonly List<Tuple<string, DateTime>> Events = new List<Tuple<string, DateTime>>();
+
+        static public string AppDataLocation;
+        static public Settings Settings;
+        static public List<string> Problem = new List<string>();
+        //static public Dictionary<string, string> UsedCommandLine = new Dictionary<string, string>();
+        static public string[] args;
+
+        static public string GetExecutableContainingFolder() => Path.GetDirectoryName(GetExecutedFilePath());
+
+        static public string GetAssemblyFilePath(this Assembly assembly)
+            => new Uri(assembly.CodeBase).LocalPath;
+        static public string GetAssemblyFilePath() => GetAssemblyFilePath(Assembly.GetCallingAssembly());
+        static public string GetExecutedFilePath() => GetAssemblyFilePath(Assembly.GetEntryAssembly());
+
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main(string[] args)
+        {
+            Program.args = args;
+            bool defaultcfglocation = true, deploy = true;
+            {
+                void LoadOrCreateSettings(string path)
+                {
+                    Settings = new Settings();
+                    if (Path.IsPathRooted(path) && path.Length > 3 && path[1] == ':' && path[2] == '\\')
+                    {
+                        if (Settings.Load(path))
+                            return;
+                    }
+                    else if (string.IsNullOrWhiteSpace(AppDataLocation))
+                        Problem.Add("Could not validate settings path, either by a simple drive letter root (L:\\) or by appdata location");
+                    else if (Settings.Load(path = Path.Combine(AppDataLocation, path)))
+                        return;
+
+                    Settings.Autofill();
+
+                    if (!deploy)
+                    {
+                        Settings.SaveSettingsOnClose = Settings.When.Never;
+                        Settings.LoadError.Add("New settings file not written to disk due to command line options about data directories or deployment");
+                        return;
+                    }
+
+                    if (defaultcfglocation && AppDataLocation != null)
+                    {
+                        Settings.LoadError.Clear();
+                        if (!Settings.SaveAndApplyRedirect(path, "sessionsettings.cfg"))
+                            goto unsaved;
+                        goto saved;
+                    }
+
+                    if (!Settings.Save(path))
+                        goto unsaved;
+                    saved:
+                    Settings.LoadError.Clear();
+                    Settings.LoadError.Add("Initialized new configuration file; this message should not appear next time you run the program with the same shortcut/command.");
+                    return;
+
+                    unsaved:
+                    Problem.Add("Could not create or read settings at " + path);
+                }
+
+                string cfg = "settings.cfg";
+                {
+                    string key = null;
+                    foreach (var a in args)
+                    {
+                        if (key == null)
+                        {
+                            switch (a)
+                            {
+                                case "--no-deploy":
+                                case "-nd":
+                                    deploy = false;
+                                    continue;
+                                default:
+                                    key = a;
+                                    continue;
+                            }
+                            //UsedCommandLine[a] = null;
+                            //continue;
+                        }
+                        else
+                            switch (key)
+                            {
+                                case "--data":
+                                case "-ad":
+                                case "-d":
+                                    AppDataLocation = a;
+                                    defaultcfglocation = false;
+                                    deploy = false;
+                                    break;
+                                case "--config":
+                                case "--settings":
+                                case "-cfg":
+                                case "-c":
+                                case "-s":
+                                    cfg = a;
+                                    defaultcfglocation = false;
+                                    break;
+                                default:
+                                    Problem.Add("Unexpected parameter " + key);
+                                    key = a;
+                                    continue;
+                            }
+                        //UsedCommandLine[key] = a;
+                        key = null;
+                    }
+                    if (key != null)
+                        Problem.Add("Unexpected or incomplete parameter " + key);
+                }
+
+                if (defaultcfglocation)
+                    AppDataLocation = Environment.GetEnvironmentVariable("appdata");
+
+                if (AppDataLocation == null)
+                    Problem.Add("Unable to resolve environment variable %appdata%");
+                else if (defaultcfglocation)
+                {
+                    AppDataLocation = Path.Combine(AppDataLocation, DefaultAppDataSubfolder);
+                    try
+                    {
+                        Directory.CreateDirectory(AppDataLocation);
+                    }
+                    catch (IOException)
+                    {
+                        Problem.Add("Unable to access/create subfolder " + AppDataLocation);
+                        AppDataLocation = null;
+                    }
+
+                    if (deploy && AppDataLocation != null )
+                    {
+                        var l = Path.GetFullPath(AppDataLocation);
+                        if (!l.EndsWith(Path.DirectorySeparatorChar.ToString())) l += Path.DirectorySeparatorChar;
+
+                        foreach (var file in GetEmbedsIn("Deployable/AppData/"))
+                        {
+                            var name = file.Item1.Replace('/', '\\');
+                            name = Path.GetFullPath(Path.Combine(l, name));
+                            
+                            if (File.Exists(name)) continue;
+
+                            if (!name.StartsWith(l, StringComparison.OrdinalIgnoreCase))
+                            {
+                                Problem.Add("Path " + name + " not match for container " + l);
+                                continue;
+                            }                            
+
+                            try
+                            {
+                                Directory.CreateDirectory(Path.GetDirectoryName(name));
+                                using (var deployfile = File.Open(name, FileMode.CreateNew))
+                                using (var deployfrom = file.Item2.Open())
+                                    deployfrom.CopyTo(deployfile);
+                            }
+                            catch (IOException)
+                            {
+                                Problem.Add("Unable to deploy embedded file " + name);
+                            }
+                        }
+                    }
+                }
+
+                LoadOrCreateSettings(cfg);
+            }
+            Settings = Settings.RedirectedToSettings ?? Settings;
+
+            if (Settings.EnableVisualStyles) 
+                Application.EnableVisualStyles();
+
+            if (Problem.Count == 0) Problem = null;
+
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Faith());
+
+
+            if (Settings.SaveSettingsOnClose != Settings.When.Never)
+                try 
+                {
+                    Settings.Save(); 
+                }
+                catch (InvalidOperationException) { }
+        }
+    }
+}

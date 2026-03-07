@@ -1,0 +1,1 @@
+Compress-Archive -Path ([System.IO.Directory]::GetFileSystemEntries("$PSScriptRoot\Catalog expanded")) -DestinationPath "$PSScriptRoot\Catalog.zip" -CompressionLevel Optimal -Force
