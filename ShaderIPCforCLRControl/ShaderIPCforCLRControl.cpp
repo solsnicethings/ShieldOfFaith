@@ -148,7 +148,7 @@ void ShaderMessagingWindow::ResetParameters() {
         this->fs = fs;
         FullscreenChanged(this, EventArgs::Empty);
     }
-    void ShaderMessagingWindow::OnUpdateMinimized(bool fs, ControlMessageWindow* window) {
+    void ShaderMessagingWindow::OnUpdateMinimized(bool min, ControlMessageWindow* window) {
         this->min = min;
         MinimizedChanged(this, EventArgs::Empty);
     }
