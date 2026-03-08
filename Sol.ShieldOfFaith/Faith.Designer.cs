@@ -250,9 +250,9 @@
             this.flowLayoutPanel1.Controls.Add(this.containerIntensityLimit);
             this.flowLayoutPanel1.Controls.Add(this.buttonPickMonitor);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 74);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 114);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(339, 306);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(339, 266);
             this.flowLayoutPanel1.TabIndex = 11;
             // 
             // containerIntensityLimit
@@ -310,10 +310,10 @@
             this.colourManagerShield.BarAlpha.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarAlpha.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarAlpha.LowValueColor = System.Drawing.Color.Transparent;
-            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(48, 52, 48, 52);
-            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(135, 74);
+            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
+            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(202, 114);
             this.colourManagerShield.BarAlpha.Name = "trackBoxAlpha";
-            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 74);
+            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 114);
             this.colourManagerShield.BarAlpha.TabIndex = 4;
             this.colourManagerShield.BarAlpha.Text = "intensity: ";
             this.colourManagerShield.BarAlpha.Value = 255;
@@ -328,15 +328,15 @@
             this.colourManagerShield.BarBlue.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarBlue.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarBlue.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
-            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(48, 52, 48, 52);
-            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(135, 74);
+            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
+            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(202, 114);
             this.colourManagerShield.BarBlue.Name = "trackB";
-            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 674);
+            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 1037);
             this.colourManagerShield.BarBlue.TabIndex = 3;
             this.colourManagerShield.BarBlue.Text = "blue : ";
             this.colourManagerShield.BarBlue.ValueToStringOverride = null;
             this.colourManagerShield.BarBlue.Visible = false;
-            this.colourManagerShield.BarFont = ((System.Func<System.Drawing.Font, System.Drawing.Font>)(resources.GetObject("colourManagerShield.BarFont")));
+            this.colourManagerShield.BarFont = null;
             // 
             // 
             // 
@@ -347,10 +347,10 @@
             this.colourManagerShield.BarGreen.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarGreen.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarGreen.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(48, 52, 48, 52);
-            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(135, 74);
+            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
+            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(202, 114);
             this.colourManagerShield.BarGreen.Name = "trackG";
-            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 674);
+            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 1037);
             this.colourManagerShield.BarGreen.TabIndex = 2;
             this.colourManagerShield.BarGreen.Text = "green : ";
             this.colourManagerShield.BarGreen.ValueToStringOverride = null;
@@ -365,10 +365,10 @@
             this.colourManagerShield.BarRed.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarRed.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarRed.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(48, 52, 48, 52);
-            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(135, 74);
+            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
+            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(202, 114);
             this.colourManagerShield.BarRed.Name = "trackR";
-            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 674);
+            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 1037);
             this.colourManagerShield.BarRed.TabIndex = 1;
             this.colourManagerShield.BarRed.Text = "red  :  ";
             this.colourManagerShield.BarRed.ValueToStringOverride = null;
@@ -380,7 +380,7 @@
             this.colourManagerShield.Dock = System.Windows.Forms.DockStyle.Top;
             this.colourManagerShield.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.Name = "colourManagerShield";
-            this.colourManagerShield.Size = new System.Drawing.Size(339, 74);
+            this.colourManagerShield.Size = new System.Drawing.Size(339, 114);
             this.colourManagerShield.TabIndex = 9;
             this.colourManagerShield.Value = System.Drawing.Color.Gray;
             this.colourManagerShield.ValueChanged += new System.EventHandler(this.colourManagerShield_ValueChanged);
@@ -466,13 +466,14 @@
             this.buttonRefresh.ImageList = null;
             this.buttonRefresh.Location = new System.Drawing.Point(212, 3);
             this.buttonRefresh.Name = "buttonRefresh";
-            this.buttonRefresh.Size = new System.Drawing.Size(87, 50);
+            this.buttonRefresh.Size = new System.Drawing.Size(87, 173);
             this.buttonRefresh.TabIndex = 2;
-            this.buttonRefresh.Text = "&Refresh";
+            this.buttonRefresh.Text = "&Refresh button not working well";
             this.buttonRefresh.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.buttonRefresh.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
             this.buttonRefresh.ToggledOn = false;
             this.buttonRefresh.UseVisualStyleBackColor = false;
+            this.buttonRefresh.Visible = false;
             this.buttonRefresh.Toggled += new System.EventHandler(this.buttonRefresh_Toggled);
             // 
             // panel2
