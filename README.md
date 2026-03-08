@@ -57,7 +57,7 @@ into .h files which can be precompiled in ShaderGlass. The conversion process re
 
 ### Notes for programming and building
 
-Shield of Faith was forked from ShaderGlass without any particular understanding of how the existing project was configured.
+Shield of Faith was forked from ShaderGlass without any particular understanding of how the existing project was configured. (And I, no master of git, eventually started a fresh repository from file copy, because I made a mess of every template or fork based approach, so this repository has no technical connection to its origins.)
 
 The .NET 4.8 project has a pre-build event using make-catalog.cmd to launch make-catalog.ps1 with -ExecutionPolicy RemoteSigned to create the embedded file Catalog.zip.
 
