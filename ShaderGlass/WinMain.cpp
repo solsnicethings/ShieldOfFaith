@@ -40,6 +40,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     CaptureManager captureManager(hInstance);
     ShaderWindow   shaderWindow(captureManager);
 
+    if(lpCmdLine)
+    {
+        int  numArgs;
+        auto cmdLine = GetCommandLineW();
+        auto args    = CommandLineToArgvW(cmdLine, &numArgs);
+
+        for(int a = 1; a < numArgs; a++)
+        {
+            if(wcscmp(args[a], L"-ipc") == 0)
+                goto enableipc;
+        }
+    }
+    shaderWindow.ipc_disable();
+
+    enableipc:
     if(!shaderWindow.Create(hInstance, nCmdShow))
     {
         return FALSE;

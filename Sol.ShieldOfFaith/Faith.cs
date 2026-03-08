@@ -218,6 +218,7 @@ namespace Sol.ShieldOfFaith
         {
             if (sender != ipc) return;
             configWin.RecordEvent("Shader loaded: " + ipc.GetLastLoadedShader(), true);
+            init_load_shader();
         }
 
         void init_load_shader(/*bool trigger_A_load_Anyway = false*/)

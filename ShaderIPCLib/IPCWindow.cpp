@@ -11,6 +11,18 @@ IPCWindow::~IPCWindow()
     SetStatedataFromMemBlock<PartnerCriteria>(nullptr);
     partner = nullptr;
 }
+void IPCWindow::ForceFailState()
+{
+    if (state >= IPCWCode::NewlyCreated)
+    {
+        auto h = self;
+        self   = nullptr;
+        if(h)
+            DestroyWindow(h);
+    }
+    state = IPCWCode::IPCError;
+    
+}
 void* IPCWindow::GetStatedataPtr()
 {
     return statedata;

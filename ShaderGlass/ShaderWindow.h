@@ -183,6 +183,7 @@ private:
     void ipc_before_redefine();
     void ipc_after_redefine();
     void ipc_update_params();
+    void ipc_disable();
 
 private:
     unsigned short ipcwinstate {0};

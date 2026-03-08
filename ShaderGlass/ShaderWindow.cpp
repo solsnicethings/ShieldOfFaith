@@ -2549,7 +2549,7 @@ bool ShaderWindow::Create(_In_ HINSTANCE hInstance, _In_ int nCmdShow)
         SendMessage(m_mainWindow, WM_COMMAND, subframe, 0);
     }
 
-    if(!LoadDefault())
+    if(! (m_ipcWindow.ExtendedGetState() && LoadDefault()))
     {
 // set defaults
 #ifdef BFI_ALPHA
@@ -3206,21 +3206,36 @@ public:
 
 #ifdef _DEBUG
 static unsigned int diagnostic_sequence = 0;
+static std::wstring diagnostic_message = std::wstring();
 #endif
 
-static inline void ipc_SendDiagnosticMessage(IPCWindow* ipc, LPCWSTR message, int num = 0) {
+static inline void ipc_SendDiagnosticMessage(IPCWindow* ipc, std::wstring message) {
     #ifdef _DEBUG
     if(ipc->ExtendedGetState() >= IPCWCode::HandshakeComplete)
     {
-        auto strmsg = std::wstring(L"(#").append(std::to_wstring(++diagnostic_sequence)).append(L") ");
-        if(message)
-            strmsg.append(message);
-        if(num)
-            strmsg.append(std::to_wstring(num));
-        ipc->SendStringPtr(IPCWCode::DiagnosticMessage, strmsg.c_str());
+        if(diagnostic_message.size())
+            diagnostic_message.append(L"\r\n");
+        else
+            ipc->RunOnce([](IPCWindow* win) {
+                win->SendStringPtr(IPCWCode::DiagnosticMessage, diagnostic_message.c_str());
+                diagnostic_message.clear();
+            });
+        diagnostic_message.append(L"(#").append(std::to_wstring(++diagnostic_sequence)).append(L") ").append(message);
     }
     #endif
 }
+
+#define addvalstr(m) .append(std::to_wstring(m)).append(L";")
+#define addwchar(w) .append(w).append(L";")
+
+#ifdef _DEBUG
+#   define ipcexec(ipc, ...); ipc_SendDiagnosticMessage(ipc, ##__VA_ARGS__); __VA_ARGS__;
+#   define ipctracemsg(ipc, ...) ipc_SendDiagnosticMessage(ipc, std::wstring()__VA_ARGS__);
+#else
+#   define ipcexec(ipc, ...) __VA_ARGS__;
+#   define ipctracemsg(ipc, ...)
+#endif
+
 
 // #define MINIMIZED_TEST(hWnd) (!IsWindowVisible(hWnd))
 #define MINIMIZED_TEST(hWnd) (IsIconic(hWnd))
@@ -3243,53 +3258,75 @@ static void window_restore_thread_func(HWND window) {
 #define ipcwinstate_min_underway 0x100
 #define ipcwinstate_fs_underway 0x200
 
+#define addwinstate(w) \
+.append((w & ipcwinstate_request_fs) ? L"\r\n\tFULLSCREEN REQUEST PENDING" :  L"") \
+.append((w & ipcwinstate_request_win) ? L"\r\n\tWINDOW REQUEST PENDING" : L"")\
+.append((w & ipcwinstate_request_min) ? L"\r\n\tMINIMIZE REQUEST PENDING;" :  L"") \
+.append((w & ipcwinstate_request_re) ? L"\r\n\tRESTORE REQUEST PENDING" :  L"") \
+.append((w & ipcwinstate_request_forcedwinmin) ? L"\r\n\tWINDOW REQUIRED FOR MINIMIZE" :  L"") \
+.append((w & ipcwinstate_last_fs) ? L"\r\n\tIPC RECORD: FULLSCREEN" :  L"") \
+.append((w & ipcwinstate_last_min) ? L"\r\n\tIPC RECORD: MINIMIZED" :  L"") \
+.append((w & ipcwinstate_min_underway) ? L"\r\n\tMINIMIZING" :  L"") \
+.append((w & ipcwinstate_fs_underway) ? L"\r\n\tFULLSCREENING" :  L"")
+
 
 void ShaderWindow::ipc_update_layout()
 {
     if(m_ipcWindow.ExtendedGetState() < IPCWCode::HandshakeComplete)
         return;
 
-    ipc_SendDiagnosticMessage(&m_ipcWindow,
-        #ifdef _DEBUG
-        m_isBorderless ? L"borderless ipc_update_layout()" : 
+#ifdef _DEBUG
+
+    ipctracemsg(&m_ipcWindow,
+        addwchar(m_isBorderless ? L"borderless ipc_update_layout()" : 
         MINIMIZED_TEST(m_mainWindow) ? L"minimized ipc_update_layout()" :
-        #endif
-        L"ipc_update_layout()", ipcwinstate);
+        L"ipc_update_layout()") addvalstr(ipcwinstate) addwinstate(ipcwinstate));
 
-    if (ipcwinstate_min_underway & ipcwinstate)
+    auto debugcall = [&]()
     {
-        if(MINIMIZED_TEST(m_mainWindow))
-            ipcwinstate &= ~ipcwinstate_min_underway;
-    }
-    if(ipcwinstate_fs_underway & ipcwinstate)
-    {
-        if(m_isBorderless)
-            ipcwinstate &= ~ipcwinstate_fs_underway;
-    }
-    if(ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
-        return;
 
-    switch (ipcwinstate & 0x1f)
-    {
-    case ipcwinstate_request_min | ipcwinstate_request_forcedwinmin:
-        if(!(m_isBorderless || MINIMIZED_TEST(m_mainWindow)))
+#endif
+        if(ipcwinstate_min_underway & ipcwinstate)
         {
-            ipcwinstate = (ipcwinstate_min_underway | ipcwinstate) & ~ipcwinstate_request_min;
-            m_ipcWindow.RequestShowWindowCall(m_mainWindow, SW_SHOWMINNOACTIVE);
-            return;
+            if(MINIMIZED_TEST(m_mainWindow))
+                ipcwinstate &= ~ipcwinstate_min_underway;
         }
-        break;
-    case ipcwinstate_request_fs:
-    case ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin:
-        if(!(m_isBorderless && MINIMIZED_TEST(m_mainWindow)))
+        if(ipcwinstate_fs_underway & ipcwinstate)
         {
-            ipcwinstate &= ipcwinstate_last_fs | ipcwinstate_last_min;
-            PostMessage(m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
-            return;
+            if(m_isBorderless)
+                ipcwinstate &= ~ipcwinstate_fs_underway;
         }
-    }
+        if(ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+            return;
 
-    m_ipcWindow.RunOnce(ipc_update_layout_callback);
+        switch(ipcwinstate & 0x1f)
+        {
+        case ipcwinstate_request_min | ipcwinstate_request_forcedwinmin:
+            if(!(m_isBorderless || MINIMIZED_TEST(m_mainWindow)))
+            {
+                ipcwinstate = (ipcwinstate_min_underway | ipcwinstate) & ~ipcwinstate_request_min;
+                m_ipcWindow.RequestShowWindowCall(m_mainWindow, SW_SHOWMINNOACTIVE);
+                return;
+            }
+            break;
+        case ipcwinstate_request_fs:
+        case ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin:
+            if(!(m_isBorderless && MINIMIZED_TEST(m_mainWindow)))
+            {
+                ipcwinstate &= ipcwinstate_last_fs | ipcwinstate_last_min;
+                PostMessage(m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+                return;
+            }
+        }
+
+        m_ipcWindow.RunOnce(ipc_update_layout_callback);
+
+#ifdef _DEBUG
+    };
+
+    debugcall();
+    ipctracemsg(&m_ipcWindow, addwchar(L"completed ipc_update_layout()") addvalstr(ipcwinstate) addwinstate(ipcwinstate));
+    #endif
 }
 
 void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
@@ -3301,90 +3338,98 @@ void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
     auto shader = (ShaderWindow*)ipc->CustomRef;
     auto state  = shader->ipcwinstate;
 
-    ipc_SendDiagnosticMessage(ipc, L"ipc_update_layout_callback()", shader->ipcwinstate);
-
-    if(state & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
-        return;
-
-    if(MINIMIZED_TEST(shader->m_mainWindow))
-    {
-        if(state & ipcwinstate_request_re)
-        {
-            state &= ~ipcwinstate_request_re;
-            ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWNOACTIVATE);
-        }
-        else if(!(state & ipcwinstate_last_min))
-            ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(true);
-        shader->ipcwinstate = state | ipcwinstate_last_min;
-        return;
-    }
-
-    if(shader->m_isBorderless)
-    {
-        switch(state & (ipcwinstate_request_min | ipcwinstate_request_forcedwinmin))
-        {
-        case ipcwinstate_request_min:
-            shader->ipcwinstate = state | ipcwinstate_request_forcedwinmin;
-            PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+    #ifdef _DEBUG
+    ipctracemsg(ipc, addwchar(L"ipc_update_layout_callback()") addvalstr(shader->ipcwinstate) addwinstate(shader->ipcwinstate));
+    auto debugcall = [&]() {
+#endif
+        if(state & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
             return;
-        case 0:
-            break;
-        default:
+
+        if(MINIMIZED_TEST(shader->m_mainWindow))
+        {
+            if(state & ipcwinstate_request_re)
+            {
+                state &= ~ipcwinstate_request_re;
+                ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWNOACTIVATE);
+            }
+            else if(!(state & ipcwinstate_last_min))
+                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(true);
+            shader->ipcwinstate = state | ipcwinstate_last_min;
+            return;
+        }
+
+        if(shader->m_isBorderless)
+        {
+            switch(state & (ipcwinstate_request_min | ipcwinstate_request_forcedwinmin))
+            {
+            case ipcwinstate_request_min:
+                shader->ipcwinstate = state | ipcwinstate_request_forcedwinmin;
+                PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+                return;
+            case 0:
+                break;
+            default:
+                shader->ipcwinstate = state;
+                return;
+            }
+
+            if(state & ipcwinstate_last_min)
+                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
+
+            state &= ~(ipcwinstate_request_forcedwinmin | ipcwinstate_last_min);
+
+            if(state & ipcwinstate_request_win)
+            {
+                state &= ~ipcwinstate_request_win;
+                PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+            }
+
+            if(!(state & ipcwinstate_last_fs))
+            {
+                state |= ipcwinstate_last_fs;
+                ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(true);
+            }
             shader->ipcwinstate = state;
             return;
         }
 
-        if(state & ipcwinstate_last_min)
-            ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
+        // current state: neither minmized nor maximized
 
-        state &= ~(ipcwinstate_request_forcedwinmin | ipcwinstate_last_min);
-
-        if(state & ipcwinstate_request_win)
+        if(state & ipcwinstate_request_min)
         {
-            state &= ~ipcwinstate_request_win;
-            PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
-        }
-
-        if(!(state & ipcwinstate_last_fs))
-        {
-            state |= ipcwinstate_last_fs;
-            ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(true);
-        }
-        shader->ipcwinstate = state;
-        return;
-    }
-
-    // current state: neither minmized nor maximized
-
-    if(state & ipcwinstate_request_min)
-    {
-        if(state & ipcwinstate_request_fs)
-        {
-            state = (state | ipcwinstate_request_forcedwinmin | ipcwinstate_min_underway) & ~(ipcwinstate_request_fs | ipcwinstate_request_min);
+            if(state & ipcwinstate_request_fs)
+            {
+                state = (state | ipcwinstate_request_forcedwinmin | ipcwinstate_min_underway) & ~(ipcwinstate_request_fs | ipcwinstate_request_min);
+            }
+            else
+                state = (state | ipcwinstate_min_underway) & ~ipcwinstate_request_min;
+            ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWMINNOACTIVE);
         }
         else
-            state = (state | ipcwinstate_min_underway) & ~ipcwinstate_request_min;
-        ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWMINNOACTIVE);
-    }
-    else
-    {
-        if(state & (ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin))
         {
-            state = (state | ipcwinstate_fs_underway) & ~(ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin);
-            PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+            if(state & (ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin))
+            {
+                state = (state | ipcwinstate_fs_underway) & ~(ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin);
+                PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
+            }
+            else if(state & ipcwinstate_last_fs)
+            {
+                state &= ~ipcwinstate_last_fs;
+                ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(false);
+            }
+            if(state & ipcwinstate_last_min)
+            {
+                state &= ~ipcwinstate_last_min;
+                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
+            }
         }
-        else if(state & ipcwinstate_last_fs)
-        {
-            state &= ~ipcwinstate_last_fs;
-            ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(false);
-        }
-        if(state & ipcwinstate_last_min)
-        {
-            state &= ~ipcwinstate_last_min;
-            ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
-        }
-    }
-    shader->ipcwinstate = state;
+        shader->ipcwinstate = state;
+
+#ifdef _DEBUG
+    };
+    debugcall();
+    ipctracemsg(ipc, addwchar(L"completed ipc_update_layout_callback()") addvalstr(shader->ipcwinstate) addwinstate(shader->ipcwinstate));
+    #endif
 }
 
 static void ipcwin_OnDefinitionRequest(IPCWindow* ipc) {
@@ -3396,9 +3441,11 @@ void ShaderWindow::ipc_new_profile(IPCWindow* ipc)
     if(ipc->ExtendedGetState() < IPCWCode::HandshakeComplete)
         return;
     auto shader = (ShaderWindow*)ipc->CustomRef;
+    ipctracemsg(ipc, addwchar(L"ipc_new_profile"));
     if(!shader->m_recentProfiles.empty())
     {
         auto send = shader->m_recentProfiles[0];
+        ipc_SendDiagnosticMessage(ipc, send);
         ((ShaderMessageWindow*)ipc)->SendLoadedProfilePath(send.c_str());
     }
 }
@@ -3408,6 +3455,7 @@ void ShaderWindow::ipc_new_shader(IPCWindow* ipc)
         return;
 
     auto shader  = (ShaderWindow*)ipc->CustomRef;
+    ipctracemsg(ipc, addwchar(L"ipc_new_shader") addvalstr(shader->m_captureOptions.presetNo));
     if(shader->m_captureOptions.presetNo < shader->m_captureManager.Presets().size())
     {
         const auto&  cfg = shader->m_captureManager.Presets().at(shader->m_captureOptions.presetNo);
@@ -3427,6 +3475,7 @@ void ShaderWindow::ipc_new_shader(IPCWindow* ipc)
             path.append(s);
             delete[] s;
         }
+        ipc_SendDiagnosticMessage(ipc, path);
         ((ShaderMessageWindow*)ipc)->SendLoadedShaderPath(path.c_str());
     }
 }
@@ -3439,6 +3488,8 @@ void ShaderWindow::ipc_init()
     m_ipcWindow.CustomRef = this;
 
     m_ipcWindow.OnDefinitionRequest = [](ShaderMessageWindow* ipc) {
+        ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest()");
+
         auto shader = (ShaderWindow*)ipc->CustomRef;
         {
             auto s = shader->ipcwinstate & ~(ipcwinstate_last_min | ipcwinstate_last_fs);
@@ -3451,16 +3502,19 @@ void ShaderWindow::ipc_init()
         shader->ipc_update_layout();
 
         if(!shader->m_captureManager.IsActive())
-            goto retry;
+        {
+            ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest() awaits active ShaderGlass");
+            ipc->RunOnce(ipcwin_OnDefinitionRequest);
+            return;
+        }
 
+        ipc_SendDiagnosticMessage(ipc, L"NotifyBeginRedefine()");
         if(!ipc->NotifyBeginRedefine())
         {
-            ipc_SendDiagnosticMessage(ipc, L"failed to send redefinition start", redefine_depth);
+            ipc_SendDiagnosticMessage(ipc, L"failed to send redefinition start");
             return;
         }
         //auto d = ++redefine_depth;
-
-        ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest()", redefine_depth);
 
         for(auto p : shader->m_captureManager.Params())
         {
@@ -3472,15 +3526,12 @@ void ShaderWindow::ipc_init()
             if(std::get<1>(p)->name.size())
             {
                 auto name = convertCharArrayToLPCWSTR(std::get<1>(p)->name.c_str());
-                ipc_SendDiagnosticMessage(ipc, name, rp.distinct_values);
+                ipctracemsg(ipc, addwchar(name) addvalstr(rp.current_relative_value) addwchar(L"/") addvalstr( rp.distinct_values ));
                 auto desc = std::get<1>(p)->description.size() ? convertCharArrayToLPCWSTR(std::get<1>(p)->description.c_str()) : nullptr;
-                ipc_SendDiagnosticMessage(ipc, desc, rp.current_relative_value);
-                auto ok = ipc->SendParameter(rp.distinct_values, rp.current_relative_value, name, desc);
+                ipc->SendParameter(rp.distinct_values, rp.current_relative_value, name, desc);
                 delete[] name;
                 if(desc)
                     delete[] desc;
-                if(!ok)
-                    goto retry;
             }
         }
 
@@ -3490,13 +3541,8 @@ void ShaderWindow::ipc_init()
         //if(d == redefine_depth)
             //redefine_depth = 0;
     //endredefine:
-        ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest() completed", redefine_depth);
+        ipc_SendDiagnosticMessage(ipc, L"NotifyEndRedefine()");
         ipc->NotifyEndRedefine();
-        return;
-
-    retry:
-        ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest() not completed due to IPC", redefine_depth);
-        ipc->RunOnce(ipcwin_OnDefinitionRequest);
     };
 
     m_ipcWindow.OnGetParameterRelativeValue = [](int relative_value, unsigned int id, ShaderMessageWindow* ipc) {
@@ -3541,14 +3587,17 @@ void ShaderWindow::ipc_init()
         return 0u;
     };
     m_ipcWindow.OnReceiveProfilePath = [](LPCWSTR path, ShaderMessageWindow* ipc) { 
+        ipctracemsg(ipc, addwchar(L"OnReceiveProfilePath") addwchar(path))
         ((ShaderWindow*)ipc->CustomRef)->LoadProfile(std::wstring(path)); 
     };
     m_ipcWindow.OnReceiveShaderPath  = [](LPCWSTR path, ShaderMessageWindow* ipc) {
+        ipctracemsg(ipc, addwchar(L"OnReceiveShaderPath") addwchar(path))
         ((ShaderWindow*)ipc->CustomRef)->ImportShader(std::wstring(path)); 
     };
 
     m_ipcWindow.OnReloadProfileCommand = [](ShaderMessageWindow* ipc) {
         //verified that it puts most recent profile first
+        ipctracemsg(ipc, addwchar(L"OnReloadProfileCommand"))
         auto s = (ShaderWindow*)ipc->CustomRef;
         auto p = &s->m_recentProfiles;
         if(p->size())
@@ -3556,10 +3605,12 @@ void ShaderWindow::ipc_init()
     };
 
     m_ipcWindow.OnResetParametersCommand = [](ShaderMessageWindow* ipc) { 
+        ipctracemsg(ipc, addwchar(L"OnResetParametersCommand"))
         ((ShaderWindow*)ipc->CustomRef)->m_captureManager.ResetParams(); 
     };
 
     m_ipcWindow.OnSaveProfileCommand = [](LPCWSTR path, ShaderMessageWindow* ipc) {
+        ipctracemsg(ipc, addwchar(L"OnSaveProfileCommand") addwchar(path))
         ((ShaderWindow*)ipc->CustomRef)->SaveProfile(std::wstring(path)); 
     };
 
@@ -3570,7 +3621,10 @@ void ShaderWindow::ipc_init()
             shader->ipcwinstate |= ipcwinstate_request_fs;
         else
             shader->ipcwinstate |= ipcwinstate_request_win;
-        shader->ipc_update_layout_callback(ipc);
+        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+            shader->ipc_update_layout();
+        else
+            shader->ipc_update_layout_callback(ipc);
     };
 
     m_ipcWindow.OnSetMinimizedCommand = [](bool min, ShaderMessageWindow* ipc) {
@@ -3580,12 +3634,16 @@ void ShaderWindow::ipc_init()
             shader->ipcwinstate |= ipcwinstate_request_min;
         else
             shader->ipcwinstate |= ipcwinstate_request_re;
-        shader->ipc_update_layout_callback(ipc);               
+        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+            shader->ipc_update_layout();
+        else
+            shader->ipc_update_layout_callback(ipc);         
     };
 
     m_ipcWindow.OnToggleMenuCommand = [](ShaderMessageWindow* ipc) {
         auto shader = (ShaderWindow*)ipc->CustomRef;
         auto hWnd   = shader->m_mainWindow;
+        ipc_SendDiagnosticMessage(ipc,L"OnToggleMenuCommand");
         if(GetMenu(hWnd))
             SetMenu(hWnd, NULL);
         else
@@ -3614,7 +3672,7 @@ void ShaderWindow::ipc_before_redefine()
     if(m_ipcWindow.ExtendedGetState() >= IPCWCode::HandshakeComplete)
     {
         ++redefine_depth;
-        ipc_SendDiagnosticMessage(&m_ipcWindow, L"ipc_before_redefine()", redefine_depth);
+        ipctracemsg(&m_ipcWindow, addwchar(L"ipc_before_redefine()") addvalstr(redefine_depth));
     }
 }
 
@@ -3622,7 +3680,7 @@ void ShaderWindow::ipc_after_redefine()
 {
     if(m_ipcWindow.ExtendedGetState() >= IPCWCode::HandshakeComplete)
     {
-        ipc_SendDiagnosticMessage(&m_ipcWindow, L"ipc_after_redefine()", redefine_depth);
+        ipctracemsg(&m_ipcWindow, addwchar(L"ipc_after_redefine()") addvalstr(redefine_depth));
         if(--redefine_depth == 0)
             m_ipcWindow.OnDefinitionRequest(&m_ipcWindow);
     }
@@ -3630,6 +3688,7 @@ void ShaderWindow::ipc_after_redefine()
 
 void ShaderWindow::ipc_update_params()
 {
+    ipctracemsg(&m_ipcWindow, addwchar(L"ipc_update_params()") addvalstr(redefine_depth));
     for(auto p : m_captureManager.Params())
     {
         if(redefine_depth)
@@ -3644,4 +3703,8 @@ void ShaderWindow::ipc_update_params()
             delete[] name;
         }
     }
+}
+
+void ShaderWindow::ipc_disable() {
+    m_ipcWindow.ForceFailState();
 }

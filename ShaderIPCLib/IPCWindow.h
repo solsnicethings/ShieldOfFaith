@@ -55,7 +55,7 @@ class IPCWindow
 {
 public:
     bool IsWindowDestroyed();
-
+    void ForceFailState();
     
     /// Note regarding various lifecycle events internally executed running TriggerLifecycleEvents():
     ///     a single lifecycle trigger executes each pointer only once, even if it is submitted more than once.
