@@ -3229,10 +3229,10 @@ static inline void ipc_SendDiagnosticMessage(IPCWindow* ipc, std::wstring messag
 #define addwchar(w) .append(w).append(L";")
 
 #ifdef _DEBUG
-#   define ipcexec(ipc, ...); ipc_SendDiagnosticMessage(ipc, ##__VA_ARGS__); __VA_ARGS__;
+//#   define ipcexec(ipc, ...); ipc_SendDiagnosticMessage(ipc, ##__VA_ARGS__); __VA_ARGS__;
 #   define ipctracemsg(ipc, ...) ipc_SendDiagnosticMessage(ipc, std::wstring()__VA_ARGS__);
 #else
-#   define ipcexec(ipc, ...) __VA_ARGS__;
+//#   define ipcexec(ipc, ...) __VA_ARGS__;
 #   define ipctracemsg(ipc, ...)
 #endif
 
@@ -3254,20 +3254,28 @@ static void window_restore_thread_func(HWND window) {
 #define ipcwinstate_request_forcedwinmin 0x10
 #define ipcwinstate_last_fs 0x20
 #define ipcwinstate_last_min 0x40
+#define ipcwinstate_queried 0x80
 
 #define ipcwinstate_min_underway 0x100
-#define ipcwinstate_fs_underway 0x200
+#define ipcwinstate_re_underway 0x200
+#define ipcwinstate_fs_underway 0x400
+#define ipcwinstate_win_underway 0x800
+
 
 #define addwinstate(w) \
-.append((w & ipcwinstate_request_fs) ? L"\r\n\tFULLSCREEN REQUEST PENDING" :  L"") \
+.append((w & ipcwinstate_request_fs) ? L"\r\n\tFULLSCREEN REQUEST PENDING" :  L"")\
 .append((w & ipcwinstate_request_win) ? L"\r\n\tWINDOW REQUEST PENDING" : L"")\
-.append((w & ipcwinstate_request_min) ? L"\r\n\tMINIMIZE REQUEST PENDING;" :  L"") \
-.append((w & ipcwinstate_request_re) ? L"\r\n\tRESTORE REQUEST PENDING" :  L"") \
-.append((w & ipcwinstate_request_forcedwinmin) ? L"\r\n\tWINDOW REQUIRED FOR MINIMIZE" :  L"") \
-.append((w & ipcwinstate_last_fs) ? L"\r\n\tIPC RECORD: FULLSCREEN" :  L"") \
-.append((w & ipcwinstate_last_min) ? L"\r\n\tIPC RECORD: MINIMIZED" :  L"") \
-.append((w & ipcwinstate_min_underway) ? L"\r\n\tMINIMIZING" :  L"") \
-.append((w & ipcwinstate_fs_underway) ? L"\r\n\tFULLSCREENING" :  L"")
+.append((w & ipcwinstate_request_min) ? L"\r\n\tMINIMIZE REQUEST PENDING;" :  L"")\
+.append((w & ipcwinstate_request_re) ? L"\r\n\tRESTORE REQUEST PENDING" :  L"")\
+.append((w & ipcwinstate_request_forcedwinmin) ? L"\r\n\tWINDOW REQUIRED FOR MINIMIZE" :  L"")\
+.append((w & ipcwinstate_last_fs) ? L"\r\n\tIPC RECORD: FULLSCREEN" :  L"")\
+.append((w & ipcwinstate_last_min) ? L"\r\n\tIPC RECORD: MINIMIZED" :  L"")\
+.append((w & ipcwinstate_queried) ? L"\r\n\tQUERIED" :L"") \
+.append((w & ipcwinstate_min_underway) ? L"\r\n\tMINIMIZING" :  L"")\
+.append((w & ipcwinstate_re_underway) ? L"\r\n\tREDISPLAYING" : L"")\
+.append((w & ipcwinstate_fs_underway) ? L"\r\n\tFULLSCREENING" :  L"")\
+.append((w & ipcwinstate_fs_underway) ? L"\r\n\tWINDOWING" : L"")
+
 
 
 void ShaderWindow::ipc_update_layout()
@@ -3286,17 +3294,13 @@ void ShaderWindow::ipc_update_layout()
     {
 
 #endif
-        if(ipcwinstate_min_underway & ipcwinstate)
-        {
-            if(MINIMIZED_TEST(m_mainWindow))
-                ipcwinstate &= ~ipcwinstate_min_underway;
-        }
-        if(ipcwinstate_fs_underway & ipcwinstate)
-        {
-            if(m_isBorderless)
-                ipcwinstate &= ~ipcwinstate_fs_underway;
-        }
-        if(ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+
+        ipcwinstate &= ~(
+           (MINIMIZED_TEST(m_mainWindow) ? ipcwinstate_min_underway : ipcwinstate_re_underway) |
+            (m_isBorderless ? ipcwinstate_fs_underway : ipcwinstate_win_underway)
+            );
+
+        if(ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway | ipcwinstate_win_underway | ipcwinstate_re_underway))
             return;
 
         switch(ipcwinstate & 0x1f)
@@ -3305,15 +3309,19 @@ void ShaderWindow::ipc_update_layout()
             if(!(m_isBorderless || MINIMIZED_TEST(m_mainWindow)))
             {
                 ipcwinstate = (ipcwinstate_min_underway | ipcwinstate) & ~ipcwinstate_request_min;
+                ipctracemsg(&m_ipcWindow, addwchar(L"SW_SHOWMINNOACTIVE"));
                 m_ipcWindow.RequestShowWindowCall(m_mainWindow, SW_SHOWMINNOACTIVE);
                 return;
             }
             break;
         case ipcwinstate_request_fs:
         case ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin:
-            if(!(m_isBorderless && MINIMIZED_TEST(m_mainWindow)))
+        case ipcwinstate_request_re | ipcwinstate_request_forcedwinmin:
+        case ipcwinstate_request_re | ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin:
+            if(!(m_isBorderless || MINIMIZED_TEST(m_mainWindow)))
             {
-                ipcwinstate &= ipcwinstate_last_fs | ipcwinstate_last_min;
+                ipcwinstate = ipcwinstate_fs_underway | (ipcwinstate & (ipcwinstate_last_fs | ipcwinstate_last_min | ipcwinstate_queried));
+                ipctracemsg(&m_ipcWindow, addwchar(L"ID_PROCESSING_FULLSCREEN (to fullscreen)"));
                 PostMessage(m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
                 return;
             }
@@ -3339,55 +3347,90 @@ void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
     auto state  = shader->ipcwinstate;
 
     #ifdef _DEBUG
-    ipctracemsg(ipc, addwchar(L"ipc_update_layout_callback()") addvalstr(shader->ipcwinstate) addwinstate(shader->ipcwinstate));
+    ipctracemsg(ipc, addwchar(L"ipc_update_layout_callback()") addvalstr(state) addwinstate(state));
     auto debugcall = [&]() {
 #endif
-        if(state & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+
+        if(state & (ipcwinstate_min_underway | ipcwinstate_fs_underway | ipcwinstate_win_underway | ipcwinstate_re_underway))
             return;
 
         if(MINIMIZED_TEST(shader->m_mainWindow))
         {
+            state &= ~ipcwinstate_request_min;
             if(state & ipcwinstate_request_re)
             {
-                state &= ~ipcwinstate_request_re;
+                state = (state | ipcwinstate_re_underway) & ~ipcwinstate_request_re;
+                ipctracemsg(ipc, addwchar(L"SW_SHOWNOACTIVATE"));
                 ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWNOACTIVATE);
             }
-            else if(!(state & ipcwinstate_last_min))
+            else if(state & ipcwinstate_queried)
+            {
                 ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(true);
+                if(state & ipcwinstate_request_forcedwinmin)
+                {
+                    ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(true);
+                    state = (state | ipcwinstate_last_fs | ipcwinstate_last_min) & ~ipcwinstate_queried;
+                }
+                else
+                {
+                    ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(false);
+                    state = (state | ipcwinstate_last_min) & ~(ipcwinstate_queried | ipcwinstate_last_fs);
+                }
+            }
+            else if(!(state & (ipcwinstate_last_min)))
+            {
+                ipctracemsg(ipc, addwchar(L"SendUpdateMinimized(true)"));
+                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(true);
+            }
             shader->ipcwinstate = state | ipcwinstate_last_min;
             return;
         }
 
         if(shader->m_isBorderless)
         {
+            state &= ~(ipcwinstate_request_re | ipcwinstate_request_fs);
             switch(state & (ipcwinstate_request_min | ipcwinstate_request_forcedwinmin))
             {
             case ipcwinstate_request_min:
-                shader->ipcwinstate = state | ipcwinstate_request_forcedwinmin;
+                shader->ipcwinstate = state | ipcwinstate_request_forcedwinmin | ipcwinstate_win_underway;
+                ipctracemsg(ipc, addwchar(L"ID_PROCESSING_FULLSCREEN (to window for minimize)"));
                 PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
                 return;
             case 0:
                 break;
             default:
-                shader->ipcwinstate = state;
-                return;
+                ipctracemsg(ipc, addwchar(L"ipcwinstate_request_forcedwinmin (while fullscreen)"));
+                state &= ~ipcwinstate_request_forcedwinmin;
             }
-
-            if(state & ipcwinstate_last_min)
-                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
-
-            state &= ~(ipcwinstate_request_forcedwinmin | ipcwinstate_last_min);
 
             if(state & ipcwinstate_request_win)
             {
-                state &= ~ipcwinstate_request_win;
+                state = (state | ipcwinstate_win_underway) & ~ipcwinstate_request_win;
+                ipctracemsg(ipc, addwchar(L"ID_PROCESSING_FULLSCREEN (to window)"));
                 PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
             }
-
-            if(!(state & ipcwinstate_last_fs))
+            else if (state & ipcwinstate_queried)
             {
-                state |= ipcwinstate_last_fs;
+                ipctracemsg(ipc, addwchar(L"SendUpdateMinimized(false)"));
+                ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
+                ipctracemsg(ipc, addwchar(L"SendUpdateFullscreen(true)"));
                 ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(true);
+                state = (state | ipcwinstate_last_fs) & ~(ipcwinstate_last_min | ipcwinstate_queried);
+            }
+            else
+            {
+                if(state & ipcwinstate_last_min)
+                {
+                    ipctracemsg(ipc, addwchar(L"SendUpdateMinimized(false)"));
+                    ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
+                    state &= ~ipcwinstate_last_min;
+                }
+                if(!(state & ipcwinstate_last_fs))
+                {
+                    state |= ipcwinstate_last_fs;
+                    ipctracemsg(ipc, addwchar(L"SendUpdateFullscreen(true)"));
+                    ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(true);
+                }
             }
             shader->ipcwinstate = state;
             return;
@@ -3395,6 +3438,7 @@ void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
 
         // current state: neither minmized nor maximized
 
+        state &= ~(ipcwinstate_request_re | ipcwinstate_request_win);
         if(state & ipcwinstate_request_min)
         {
             if(state & ipcwinstate_request_fs)
@@ -3403,6 +3447,7 @@ void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
             }
             else
                 state = (state | ipcwinstate_min_underway) & ~ipcwinstate_request_min;
+            ipctracemsg(ipc, addwchar(L"SW_SHOWMINNOACTIVE"));
             ((ShaderMessageWindow*)ipc)->RequestShowWindowCall(shader->m_mainWindow, SW_SHOWMINNOACTIVE);
         }
         else
@@ -3410,16 +3455,19 @@ void ShaderWindow::ipc_update_layout_callback(IPCWindow* ipc)
             if(state & (ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin))
             {
                 state = (state | ipcwinstate_fs_underway) & ~(ipcwinstate_request_fs | ipcwinstate_request_forcedwinmin);
+                ipctracemsg(ipc, addwchar(L"ID_PROCESSING_FULLSCREEN"));
                 PostMessage(shader->m_mainWindow, WM_COMMAND, ID_PROCESSING_FULLSCREEN, 0);
             }
-            else if(state & ipcwinstate_last_fs)
+            else if(state & (ipcwinstate_last_fs | ipcwinstate_queried ))
             {
                 state &= ~ipcwinstate_last_fs;
+                ipctracemsg(ipc, addwchar(L"SendUpdateFullscreen(false)"));
                 ((ShaderMessageWindow*)ipc)->SendUpdateFullscreen(false);
             }
-            if(state & ipcwinstate_last_min)
+            if(state & (ipcwinstate_last_min | ipcwinstate_queried ))
             {
-                state &= ~ipcwinstate_last_min;
+                state &= ~(ipcwinstate_last_min | ipcwinstate_queried);
+                ipctracemsg(ipc, addwchar(L"SendUpdateMinimized(false)"));
                 ((ShaderMessageWindow*)ipc)->SendUpdateMinimized(false);
             }
         }
@@ -3491,14 +3539,7 @@ void ShaderWindow::ipc_init()
         ipc_SendDiagnosticMessage(ipc, L"OnDefinitionRequest()");
 
         auto shader = (ShaderWindow*)ipc->CustomRef;
-        {
-            auto s = shader->ipcwinstate & ~(ipcwinstate_last_min | ipcwinstate_last_fs);
-            if(!MINIMIZED_TEST(shader->m_mainWindow))
-                s |= ipcwinstate_last_min;
-            if(!shader->m_isBorderless)
-                s |= ipcwinstate_last_fs;
-            shader->ipcwinstate = s;
-        }
+        shader->ipcwinstate |= ipcwinstate_queried;
         shader->ipc_update_layout();
 
         if(!shader->m_captureManager.IsActive())
@@ -3621,7 +3662,7 @@ void ShaderWindow::ipc_init()
             shader->ipcwinstate |= ipcwinstate_request_fs;
         else
             shader->ipcwinstate |= ipcwinstate_request_win;
-        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway | ipcwinstate_win_underway | ipcwinstate_re_underway))
             shader->ipc_update_layout();
         else
             shader->ipc_update_layout_callback(ipc);
@@ -3634,7 +3675,7 @@ void ShaderWindow::ipc_init()
             shader->ipcwinstate |= ipcwinstate_request_min;
         else
             shader->ipcwinstate |= ipcwinstate_request_re;
-        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway))
+        if(shader->ipcwinstate & (ipcwinstate_min_underway | ipcwinstate_fs_underway | ipcwinstate_win_underway | ipcwinstate_re_underway))
             shader->ipc_update_layout();
         else
             shader->ipc_update_layout_callback(ipc);         

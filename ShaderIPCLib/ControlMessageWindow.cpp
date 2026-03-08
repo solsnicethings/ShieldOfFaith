@@ -91,11 +91,11 @@ LRESULT ControlMessageWindow::HandleReceivedSignal(HWND from, UINT signal)
     if(!ReverifyPartnerCriteriaInStatedataPtr())
         return 0;
 
-    if(OnReceiveDiagnosticText)
+    /* if(OnReceiveDiagnosticText)
     {
         auto c_str =  std::wstring(L"(internal) signal received: ").append(std::to_wstring(signal));
         OnReceiveDiagnosticText(c_str.c_str(), this);
-    }
+    }*/
 
     switch(signal)
     {
@@ -184,6 +184,7 @@ void ControlMessageWindow::HandleQueuedData(HWND from, COPYDATASTRUCT* data) {
         if(OnReceiveDiagnosticText)
             OnReceiveDiagnosticText((LPCWSTR)data->lpData, this);
         return;
+        /*
     default:
         if(OnReceiveDiagnosticText)
         {
@@ -206,6 +207,7 @@ void ControlMessageWindow::HandleQueuedData(HWND from, COPYDATASTRUCT* data) {
                 s.append(L" IS NULL");
             OnReceiveDiagnosticText(s.c_str(), this);
         }
+        */
     }
     IPCWindow::HandleQueuedData(from, data);
 }
