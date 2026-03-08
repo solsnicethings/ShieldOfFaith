@@ -114,7 +114,7 @@ void ShaderMessagingWindow::ResetParameters() {
     }
 
     void ShaderMessagingWindow::OnProfileLoaded(LPCWSTR text, ControlMessageWindow* window) {
-        auto txt = AsString(text);
+        auto txt = AsString(text)->Replace("\"", String::Empty)->Trim();
         if(txt != profile)
         {
             profile = txt;
@@ -122,7 +122,7 @@ void ShaderMessagingWindow::ResetParameters() {
         }
     }
     void ShaderMessagingWindow::OnShaderLoaded(LPCWSTR text, ControlMessageWindow* window) {
-        auto txt = AsString(text);
+        auto txt = AsString(text)->Replace("\"", String::Empty)->Trim();
         if(txt != shader)
         {
             shader = txt;

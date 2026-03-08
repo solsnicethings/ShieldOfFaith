@@ -138,36 +138,31 @@ namespace Sol.ShieldOfFaith
                 ipc = new IPC();
 
                 shaderglass = new Process();
-                
+
                 var profile = Program.Settings.ShaderGlassProfile;
 
                 if (!string.IsNullOrEmpty(profile))
                 {
-                    var p = Path.Combine(Program.AppDataLocation, profile);
-                    if (!File.Exists(p))
+                    profile = Program.FindPathTo(profile);
+                    if (profile == null)
                     {
-                        p = Path.Combine(Program.DefaultAppDataLocation, profile);
-                        if (!File.Exists(p))
+                        if (MessageBox.Show(profile + " not found. Launch without specifying a profile? (its default settings may be inconvenient; putting the right profile path in the configuration file may be better.)", "ShaderGlass profile missing", MessageBoxButtons.YesNo, MessageBoxIcon.Error)
+                            != DialogResult.Yes)
                         {
-                            p = Path.Combine(Program.GetExecutableContainingFolder(), p);
-                            if (!File.Exists(p))
-                            {
-                                p = null;
-                                if (MessageBox.Show(profile + " not found. Launch without specifying a profile? (its default settings may be inconvenient; putting the right profile path in the configuration file may be better.)", "ShaderGlass profile missing", MessageBoxButtons.YesNo, MessageBoxIcon.Error)
-                                    != DialogResult.Yes)
-                                {
-                                    ClearIPC();
-                                    return;
-                                }
-                            }
+                            ClearIPC();
+                            return;
                         }
                     }
-                    profile = p == null ? string.Empty : " \"" + p + "\"";
+                    else profile = " \"" + profile + "\"";
                 }
                 shader_profile = string.IsNullOrEmpty(profile) ? null : profile;
 
                 shaderglass.StartInfo = new ProcessStartInfo(executable,
                     (toggleGlassWindow.ToggledOn ? "-ipc": "-f -ipc") + profile);
+
+                if (shader_profile != null)
+                    shader_profile = shader_profile.Replace("\"", string.Empty).Trim();
+
                 if (!string.IsNullOrEmpty(shaderglass.StartInfo.Arguments))
                     configWin.RecordEvent("with arguments = " + shaderglass.StartInfo.Arguments);
                 shaderglass.EnableRaisingEvents = true;
@@ -230,9 +225,20 @@ namespace Sol.ShieldOfFaith
                     preparing_to_load_shader = false;
                     var p = Program.Settings.ShaderGlassCustomShader;
                     if (string.IsNullOrEmpty(p)) return;
+                    p = Program.FindPathTo(p);
+                    if (p == null)
+                    {
+                        configWin.RecordEvent("Unable to locate shader " + Program.Settings.ShaderGlassCustomShader + " by absolute or relative path.");
+                        return;
+                    }
                     if (string.Equals(p, ipc.GetLastLoadedShader(), StringComparison.OrdinalIgnoreCase)) return;
                     configWin.RecordEvent("Requesting shader switch: " + p, true);
-                    ipc.LoadShader(p);
+                    Application.Idle += Application_Idle;
+                    void Application_Idle(object sender, EventArgs e)
+                    {
+                        Application.Idle -= Application_Idle;
+                        ipc.LoadShader(p);
+                    }
                     return;
                 }
             }/*

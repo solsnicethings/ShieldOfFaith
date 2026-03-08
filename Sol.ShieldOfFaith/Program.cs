@@ -25,6 +25,22 @@ namespace Sol.ShieldOfFaith
             }
         }
 
+        static public string FindPathTo(string file)
+        {
+            if (string.IsNullOrEmpty(file))
+                return null;
+            string p;
+            if (File.Exists(file))
+                p = file;
+            else if (!(
+                File.Exists(p = Path.Combine(AppDataLocation, file)) ||
+                File.Exists(p = Path.Combine(DefaultAppDataLocation, file)) ||
+                File.Exists(p = Path.Combine(GetExecutableContainingFolder(), file))
+                ))
+                return null;
+            return Path.GetFullPath(p);
+        }
+
         static public System.IO.Compression.ZipArchive
             EmbedCatalog = new System.IO.Compression.ZipArchive(Assembly.GetExecutingAssembly().GetManifestResourceStream("Sol.ShieldOfFaith.Files.Catalog.zip")
                 , System.IO.Compression.ZipArchiveMode.Read);
