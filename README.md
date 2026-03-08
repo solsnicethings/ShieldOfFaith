@@ -57,7 +57,7 @@ into .h files which can be precompiled in ShaderGlass. The conversion process re
 
 ### Notes for programming and building
 
-Shield of Faith was forked from ShaderGlass without any particular understanding of how the existing project was configured.
+Shield of Faith was forked from ShaderGlass without any particular understanding of how the existing project was configured. (And I, no master of git, eventually started a fresh repository from file copy, because I made a mess of every template or fork based approach, so this repository has no technical connection to its origins.)
 
 The .NET 4.8 project has a pre-build event using make-catalog.cmd to launch make-catalog.ps1 with -ExecutionPolicy RemoteSigned to create the embedded file Catalog.zip.
 
@@ -67,7 +67,7 @@ The Projects added by me are:
 ShaderIPCLib, ShaderIPCforCLRControl, Sol.ShieldOfFaith.
 The ShaderGlass project is modified by me to make use of ShaderIPCLib and integrate with Sol.ShieldOfFaith.
 
-This modified version of ShaderGlass will only perform differently when launched from a process that passes the -ipc parameter and proceeds to communicate as designed in ShaderIPCLib.
+This modified version of ShaderGlass will only perform differently when launched from a process that passes the -ipc parameter and proceeds to communicate as designed in ShaderIPCLib, except that it has "none" as its most default shader, to avoid springing a CRT effect at someone who wouldn't want it.
 
 The combination of Shield of Faith and ShaderGlass into a single bundle has not been automated. Doing so manually consists of:
 
