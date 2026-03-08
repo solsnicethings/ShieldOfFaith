@@ -127,6 +127,7 @@ void ShaderMessagingWindow::ResetParameters() {
         {
             shader = txt;
             ShaderIsLoaded(this, EventArgs::Empty);
+            Refresh(100);
         }
     }
     void ShaderMessagingWindow::OnProfileSaved(LPCWSTR path, ControlMessageWindow * window)

@@ -31,6 +31,9 @@ namespace Sol.ShieldOfFaith
                 var p = Program.Settings.ShaderGlassPath;
                 if (string.IsNullOrWhiteSpace(p))
                     return null;
+
+                // can only be relative to program folder (presumed higher security than user folders),
+                // otherwise low-security folders can be used to unexpectedly swap in executable
                 return Path.GetFullPath(Path.Combine(Program.GetExecutableContainingFolder(), p));
             }
             set
@@ -325,7 +328,7 @@ namespace Sol.ShieldOfFaith
 
         private void Ipc_ParameterReceived(ShaderIPCforCLRControl.ShaderMessagingWindow win, int range, int relativeValue, string name, string tooltip)
         {
-            if (win != ipc) return;
+            if (win != ipc || string.IsNullOrWhiteSpace(name)) return;
             configWin.RecordEvent("IPC: PARAM " + name + "=" + relativeValue);
             if (range > 0)
             {
