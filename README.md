@@ -67,7 +67,7 @@ The Projects added by me are:
 ShaderIPCLib, ShaderIPCforCLRControl, Sol.ShieldOfFaith.
 The ShaderGlass project is modified by me to make use of ShaderIPCLib and integrate with Sol.ShieldOfFaith.
 
-This modified version of ShaderGlass will only perform differently when launched from a process that passes the -ipc parameter and proceeds to communicate as designed in ShaderIPCLib.
+This modified version of ShaderGlass will only perform differently when launched from a process that passes the -ipc parameter and proceeds to communicate as designed in ShaderIPCLib, except that it has "none" as its most default shader, to avoid springing a CRT effect at someone who wouldn't want it.
 
 The combination of Shield of Faith and ShaderGlass into a single bundle has not been automated. Doing so manually consists of:
 
