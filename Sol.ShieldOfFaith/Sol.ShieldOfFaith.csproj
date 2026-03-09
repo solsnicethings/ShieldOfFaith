@@ -65,6 +65,7 @@
     <Compile Include="Composure.Designer.cs">
       <DependentUpon>Composure.cs</DependentUpon>
     </Compile>
+    <Compile Include="ControlStyler.cs" />
     <Compile Include="Faith.cs">
       <SubType>Form</SubType>
     </Compile>
