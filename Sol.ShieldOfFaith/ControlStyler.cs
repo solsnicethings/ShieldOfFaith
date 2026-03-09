@@ -127,7 +127,30 @@ namespace Sol.ShieldOfFaith
 
             void ResolveColour(Action<Color> assign, Func<Color> getContext, IEnumerable<object> value)
             {
-
+                foreach (var v in value)
+                {
+                    if (v is Color c)
+                        switch (c.A)
+                        {
+                            case 255:
+                                assign(c);
+                                return;
+                            case 0:
+                                assign(getContext());
+                                return;
+                            default:
+                                assign(FormsUtil.Mix(Color.FromArgb(255, c), getContext(), c.A / 255.0));
+                                return;
+                        }
+                    if (v is SpecialValue s)
+                        switch (s)
+                        {
+                            case SpecialValue.Inherit:
+                                assign(getContext());
+                                return;
+                        }
+                }
+                assign(getContext());
             }
 
             ResolveColour(c => target.ForeColor = c, () => target.Parent?.ForeColor ?? Color.Khaki, GetValue(ControlPropertyCode.Foreground));
