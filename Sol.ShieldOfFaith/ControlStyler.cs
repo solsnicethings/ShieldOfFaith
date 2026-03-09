@@ -41,7 +41,16 @@ namespace Sol.ShieldOfFaith
                         if ((ControlSelectorCode.Tierless & controlType) != 0)
                             return l;
                         if ((controlType & (ControlSelectorCode)0xff) == controlType)
-                            controlType = (ControlSelectorCode)((int)controlType >> 4);
+                        {
+                            if ((0xf0 & (int)controlType) == 0)
+                            {
+                                if ((controlType & ControlSelectorCode.Tier0) != 0 && TryGetValue(ControlSelectorCode.Tier0, out d))
+                                    l.Add(d);
+                                return l;
+                            }
+                            controlType = ((ControlSelectorCode)0xf) & controlType;
+                            break;
+                        }
                         else
                             controlType = (ControlSelectorCode)((int)controlType >> 8);
                         break;
@@ -95,6 +104,19 @@ namespace Sol.ShieldOfFaith
                                         break;
                                 }
                             else if (target is TrackBox.Composite) ct = ControlSelectorCode.CompositeTrackBox;
+                            else if (target is Button) ct = target is ButtonToggle ? ControlSelectorCode.ExtendedButtonToggle : ControlSelectorCode.ExtendedButton;
+                            else if (target is CheckBox) ct = ControlSelectorCode.ExtendedCheckBox;
+                            else if (target is ComboBox) ct = ControlSelectorCode.ExtendedComboBox;
+                            else if (target is Form) ct = ControlSelectorCode.ExtendedForm;
+                            else if (target is GroupBox) ct = ControlSelectorCode.ExtendedGroupBox;
+                            else if (target is Label) ct = ControlSelectorCode.ExtendedLabel;
+                            else if (target is ListBox) ct = ControlSelectorCode.ExtendedListBox;
+                            else if (target is ListView) ct = ControlSelectorCode.ExtendedListView;
+                            else if (target is Panel) ct = ControlSelectorCode.ExtendedPanel;
+                            else if (target is RadioButton) ct = ControlSelectorCode.ExtendedRadioButton;
+                            else if (target is RichTextBox) ct = ControlSelectorCode.ExtendedRichTextBox;
+                            else if (target is SplitContainer) ct = ControlSelectorCode.ExtendedSplitContainer;
+                            else if (target is TextBox) ct = ControlSelectorCode.ExtendedTextBox;
                             else ct = ControlSelectorCode.Other;
                             break;
                     }
@@ -243,7 +265,11 @@ namespace Sol.ShieldOfFaith
         Tier0 = 0x8,
         Tierless = unchecked((int)0x80000000),
 
-        // tier 1 under general tier 0 root mask 0xff
+        // tier 1 under general tier 0 mask 0x7 | Tier0 (0x8)
+        // tier 0 without tier 0 mask 0x7
+        // tier 1.5 mask 0x7f (extending any tier 0 base or tier 1)
+
+        // tier 1 (0x & 1.5 under general tier 0 root mask 0x7f (0x80 bit could push to tierless)
         FalseBorderElement = 0x1 | Tier0,
         BorderCloseButton = 0x10 | FalseBorderElement,
         BorderMinimizeButton = 0x20 | FalseBorderElement,
@@ -251,60 +277,56 @@ namespace Sol.ShieldOfFaith
         BorderTitle = 0x40 | FalseBorderElement,
 
         Container = 0x2 | Tier0,
-        Button = 0x3 | Tier0,
-        Label = 0x4 | Tier0,
+        Button = 0x3 | Tier0, ExtendedButton = 0xff | (Button << 8),
+        Label = 0x4 | Tier0, ExtendedLabel = 0xff | (Label << 8),
         CheckOrRadio = 0x5 | Tier0,
         ComplexControl = 0x6 | Tier0,
         Other = 0x7 | Tier0,
 
-        // tier 1.5
+        // tier 1.5 can not use the 1x80 bit because it could push to Tierless in tier 4
+         
+        GroupBox = 0x10 | Container, ExtendedGroupBox = 0xff | (GroupBox << 8),
+        Panel = 0x20 | Container, ExtendedPanel = 0xff | (Panel << 8),
 
-        GroupBox = 0x10 | Container,
-        Panel = 0x20 | Container,
+        CheckBox = 0x10 | CheckOrRadio, ExtendedCheckBox = 0xff | (CheckBox << 8),
+        RadioButton = 0x20 | CheckOrRadio, ExtendedRadioButton = 0xff | (RadioButton << 8),
 
-        CheckBox = 0x10 | CheckOrRadio,
-        RadioButton = 0x20 | CheckOrRadio,
+        ButtonToggle = 0xff | (ExtendedButton << 8),
 
-        ButtonToggle = 0x10 | Button,
-
-        SplitterControl = 0x30 | Container,
-        SplitterPanel = 0x01 | (SplitterControl << 8), // tier 2 mask 0xffff
+        SplitContainer = 0x30 | Container, ExtendedSplitContainer = 0xff | (SplitContainer << 8),
+        SplitterPanel = 0x01 | (SplitContainer << 8),
 
         TextInput = 0x10 | ValueControl,
         NumberInput = 0x20 | ValueControl,
         DateInput = 0x30 | ValueControl,
         ListSelector = 0x40 | ValueControl,
         TrackBox = 0x50 | ValueControl,
-        CompositeTrackBox = 0x01 | (TrackBox << 8), // tier 2 mask 0xffff
+        CompositeTrackBox = 0x01 | (TrackBox << 8),
         TrackBar = 0x60 | ValueControl,
 
         ColourManager = 0x10 | ComplexControl,
 
-        // tier 2 mask 0xffff
-        ComboBox = 0x01 | (ListSelector << 8),
-        // tier 3 mask 0xffffff
+        ComboBox = 0x01 | (ListSelector << 8), ExtendedComboBox = 0xff | (ComboBox << 8),
+
         DropDownCombo = 0x01 | (ComboBox << 8),
         ListCombo = 0x02 | (ComboBox << 8),
         SimpleCombo = 0x03 | (ComboBox << 8),
-        // tier 2 mask 0xffff
-        ListBox = 0x02 | (ListSelector << 8),
-        ListView = 0x03 | (ListSelector << 8),
 
-        TextBox = 0x01 | (TextInput << 8),
-        RichTextBox = 0x02 | (TextInput << 8),
+        ListBox = 0x02 | (ListSelector << 8), ExtendedListBox = 0xff | (ListBox << 8),
+        ListView = 0x03 | (ListSelector << 8), ExtendedListView = 0xff | (ListView << 8),
 
-        // tier 3 mask 0xffffff
+        TextBox = 0x01 | (TextInput << 8), ExtendedTextBox = 0xff | (TextBox << 8),
+        RichTextBox = 0x02 | (TextInput << 8), ExtendedRichTextBox = 0xff | (RichTextBox << 8),
+
         ReadonlyTextBox = 0x01 | (TextBox << 8),
         WriteableTextBox = 0x02 | (TextBox << 8),
         ReadonlyRichTextBox = 0x01 | (RichTextBox << 8),
         WriteableRichTextBox = 0x02 | (RichTextBox << 8),
 
-        // tier 2 mask 0xffff
-        Form = 0x01 | (ComplexControl << 8),
+        Form = 0x01 | (ComplexControl << 8), ExtendedForm = 0xff | (Form << 8),
         ShieldOfFaithButton = 0x1 | (ButtonToggle << 8),
-        ShaderGlassButton = 0x2 | (ButtonToggle << 8)
-
-        // tier 4 mask 0x7fffffff
+        ShaderGlassButton = 0x2 | (ButtonToggle << 8),
+        ExtendedButtonToggle = 0xff | (ButtonToggle << 8)
     }
 
 }
