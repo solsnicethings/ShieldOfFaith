@@ -114,7 +114,7 @@ namespace Sol.ShieldOfFaith
 
         const string
             K_autosave = "SaveSettingsOnClose",
-            K_savestate = "SaveWindowStatOnClose",
+            K_savestate = "SaveWindowStateOnClose",
             K_redirect = "RedirectConfigFile",
 
             K_extra_settings_file = "IncludeSettingsFile",
@@ -123,6 +123,7 @@ namespace Sol.ShieldOfFaith
             K_visualstyleson = "VisualStylesEnabled",
             K_visualstylesoff = "VisualStylesDisabled",
 
+            /// feature not added
             K_HideUI = "Hide",
 
             K_MainBorder = "WindowBorder",
@@ -142,6 +143,23 @@ namespace Sol.ShieldOfFaith
             K_ShieldColourBlue = "Shield colour#B",
 
             K_LoadError = "LastLoadError";
+
+        void CorrectKeys()
+        {
+            void Correct(string change_from, string change_to)
+            {
+                if (change_from == change_to)
+                    LoadError.Add("PROGRAMMER ERROR: config key correction specifies the same name as right and wrong (" + change_from + ")");
+                else if (ContainsKey(change_to))
+                    Remove(change_from);
+                else if (TryGetValue(change_from, out var v))
+                {
+                    Remove(change_from);
+                    Add(change_to, v);
+                }
+            }
+            Correct("SaveWindowStatOnClose", K_savestate);
+        }
 
         public enum UIElement
         {
@@ -381,7 +399,7 @@ namespace Sol.ShieldOfFaith
             }
             set
             {
-                Set(K_ShieldColour, new int[] { value.R, value.G, value.B });
+                Set(K_ShieldColour, string.Format("#{0:X2}{1:X2}{2:X2}", value.R, value.G, value.B));
                 Set(K_ShieldIntensity, value.A.ToString());
                 Remove(K_ShieldColourBlue);
                 Remove(K_ShieldColourRed);
@@ -666,6 +684,7 @@ namespace Sol.ShieldOfFaith
             catch (Exception x) { LoadError.Add(x.Message); throw; }
 
             Remove(K_LoadError + '#');
+            CorrectKeys();
 
             this.path = path;
             included = null;
