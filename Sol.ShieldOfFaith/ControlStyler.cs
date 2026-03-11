@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -25,127 +27,290 @@ namespace Sol.ShieldOfFaith
             Original
         }
 
-        public void Add(ControlSelectorCode ctl, ControlPropertyCode prp, string objstr)
+        const string
+            inst_select = "target",
+            inst_select_properties = "property",
+            inst_non_special_value = "value";
+
+        public void Parse(string instructions)
         {
-            object objval;
-
-            { if (Enum.TryParse<SpecialValue>(objstr, out var sv)) { objval = sv; goto valset; } }
-
-            switch (prp)
+            using (var r = new StringReader(instructions)) Parse(r);
+        }
+        public void Parse(TextReader r)
+        {
+            IEnumerable<string> ead()
             {
-                case ControlPropertyCode.BackgroundImage:
-                    throw new NotImplementedException();
-
-                case ControlPropertyCode.FontStyle:
-                    objval = Enum.Parse(typeof(FontStyle), objstr);
-                    break;
-
-                case ControlPropertyCode.ShowAlpha:
-                case ControlPropertyCode.ShowRGB:
-                case ControlPropertyCode.ShowBackButton:
-                case ControlPropertyCode.ShowSelector:
-                case ControlPropertyCode.Visible:
-                case ControlPropertyCode.AutoSize:
-                    {
-                        objval = string.Equals("yes", objstr, StringComparison.OrdinalIgnoreCase)
-                        || string.Equals("true", objstr, StringComparison.OrdinalIgnoreCase)
-                        || (long.TryParse(objstr, out var x) && x != 0);
-                    }
-                    break;
-                
-                case ControlPropertyCode.Cursor:
-                    objval = new CursorConverter().ConvertFromInvariantString(objstr);
-                    break;
-
-                case ControlPropertyCode.FontSize:
-                case ControlPropertyCode.Scale:
-                    objval = float.Parse(objstr);
-                    break;
-
-                case ControlPropertyCode.BigIncrement:
-                case ControlPropertyCode.Increment:
-                case ControlPropertyCode.Height:
-                case ControlPropertyCode.Width:
-                    objval = int.Parse(objstr);
-                    break;
-
-                    
-
-                case ControlPropertyCode.AlternateForeColour:
-                case ControlPropertyCode.LowValueColour:
-                case ControlPropertyCode.HighValueColour:
-                case ControlPropertyCode.HoverColour:
-                case ControlPropertyCode.Foreground:
-                case ControlPropertyCode.Background:
-                case ControlPropertyCode.ToggledBackground:
-                case ControlPropertyCode.ToggledForeground:
-                    objstr = objstr.Trim();
-                    if (objstr.StartsWith("0x"))
-                    {
-                        objstr = objstr.Substring(2);
-                        goto hex;
-                    }
-                    if (objstr.StartsWith("#"))
-                    {
-                        objstr = objstr.Substring(1);
-                        goto hex;
-                    }
-                    {
-                        var c = Color.FromName(objstr);
-                        if (c.IsKnownColor)
-                        {
-                            objval = c;
-                            goto valset;
-                        }
-                    }
-                    {
-                        var split = new System.Text.RegularExpressions.Regex(@"\D+", System.Text.RegularExpressions.RegexOptions.Compiled);
-                        var c = split.Split(objstr);
-                        switch (c.Length)
-                        {
-                            case 3:
-                                objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]));
-                                goto valset;
-                            case 4:
-                                objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]), byte.Parse(c[3]));
-                                goto valset;
-                        }
-                    }
-                cfail:
-                    throw new ArgumentException("No known colour or numeric colour representation: " + objstr);
-                hex:
-                    {
-                        switch (objstr.Length)
-                        {
-                            case 3:
-                                objval = Color.FromArgb(
-                                    0x11 * byte.Parse(objstr[0].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    0x11 * byte.Parse(objstr[1].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    0x11 * byte.Parse(objstr[2].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier));
-                                goto valset;
-                            case 6:
-                                objval = Color.FromArgb(
-                                    byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
-                                goto valset;
-                            case 8:
-                                objval = Color.FromArgb(
-                                    byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
-                                    byte.Parse(objstr.Substring(6, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
-                                goto valset;
-                        }
-                    }
-                    goto cfail;
-
-                default:
-                    objval = objstr;
-                    break;
+                for (; ; )
+                {
+                    var l = r.ReadLine();
+                    if (l == null) yield break;
+                    yield return l;
+                }
             }
+            Parse(ead());
+        }
+        public void Parse(IEnumerable<string> instructions)
+        {
+            var ctl = new ControlSelectorCode[] { ControlSelectorCode.Tier0 };
+            var kwrx = new System.Text.RegularExpressions.Regex(@"^\s*(\w+)\s+\S", System.Text.RegularExpressions.RegexOptions.Compiled);
+            var listrx = new System.Text.RegularExpressions.Regex(@"\W+", System.Text.RegularExpressions.RegexOptions.Compiled);
 
-        valset:;
+            using (var line = instructions.GetEnumerator())
+                while (line.MoveNext())
+                {
+                    var m = kwrx.Match(line.Current);
+                    if (m.Success)
+                    {
+                        var lc = false;
+                        var kw = m.Groups[1].Value;
+                    lctry:
+                        switch (kw)
+                        {
+                            default:
+                                if (lc) break;
+                                lc = true;
+                                kw = kw.ToLowerInvariant();
+                                goto lctry;
+                            case inst_select:
+                                {
+                                    var list = listrx.Split(line.Current.Substring(m.Index + m.Length - 1));
+                                    var c = list.Length;
+                                    if (c > 0)
+                                    {
+                                        ctl = new ControlSelectorCode[c];
+                                        while (--c > -1) ctl[c] = (ControlSelectorCode)Enum.Parse(typeof(ControlSelectorCode), list[c]);
+                                    }
+                                    else ctl = new ControlSelectorCode[] { ControlSelectorCode.Tier0 };
+                                }
+                                break;
+                            case inst_select_properties:
+                                {
+                                    var list = listrx.Split(line.Current.Substring(m.Index + m.Length - 1));
+                                    ControlPropertyCode[] prp;
+                                    {
+                                        var c = list.Length;
+
+                                        if (c == 0)
+                                            throw new ArgumentException("Empty property list.");
+
+                                        prp = new ControlPropertyCode[c];
+                                        while (--c > -1) prp[c] = (ControlPropertyCode)Enum.Parse(typeof(ControlPropertyCode), list[c]);
+                                    }
+                                    if (!line.MoveNext())
+                                        throw new ArgumentException("End of input without specifying value for property set.");
+
+                                    m = kwrx.Match(line.Current);
+                                    {
+                                        string str;
+                                        var nsp = m.Success && string.Equals(m.Groups[1].Value, inst_non_special_value, StringComparison.OrdinalIgnoreCase);
+                                        if (nsp) str = line.Current.Substring(m.Index + inst_non_special_value.Length + 1);
+                                        else str = line.Current.Trim();
+
+                                        Add(ctl, prp, str, nsp);
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+        }
+        public string Encode()
+        {
+            var str = new StringBuilder();
+            var expr_grouper = new Dictionary<string, List<ControlSelectorCode>>();
+            {
+                var val_grouper = new Dictionary<string, List<ControlPropertyCode>>();
+                foreach (var c in this)
+                {
+                    val_grouper.Clear();
+                    foreach (var v in c.Value.OrderBy(e => e.Key))
+                    {
+                        if (v.Value is SpecialValue)
+                            str.Append(v.Value);
+                        else str.Append(inst_non_special_value).Append(" ").Append(v.Value);
+                        if (!val_grouper.TryGetValue(str.ToString(), out var l))
+                        {
+                            l = new List<ControlPropertyCode>(1);
+                            val_grouper.Add(str.ToString(), l);
+                        }
+                        l.Add(v.Key);
+                        str.Clear();
+                    }
+                    foreach (var g in val_grouper)
+                    {
+                        str.Append(inst_select_properties);
+                        foreach (var p in g.Value) str.Append(" ").Append(p);
+                        str.AppendLine();
+                        str.AppendLine(g.Key);
+                        if (!expr_grouper.TryGetValue(str.ToString(), out var l))
+                        {
+                            l = new List<ControlSelectorCode>(1);
+                            expr_grouper.Add(str.ToString(), l);
+                        }
+                        l.Add(c.Key);
+                        str.Clear();
+                    }
+                }
+            }
+            {
+                var selection_grouper = new Dictionary<List<ControlSelectorCode>, List< string >> (new OrderSensitiveElementComparer<List<ControlSelectorCode>, ControlSelectorCode>());
+                foreach (var g in expr_grouper)
+                {
+                    if (!selection_grouper.TryGetValue(g.Value, out var l))
+                    {
+                        l = new List<string>(1);
+                        selection_grouper.Add(g.Value, l);
+                    }
+                    l.Add(g.Key);
+                }
+
+                foreach (var g in selection_grouper)
+                {
+                    str.Append(inst_select);
+                    foreach (var c in g.Key)
+                        str.Append(" ").Append(c);
+                    str.AppendLine();
+                    foreach (var xpr in g.Value)
+                        str.Append(xpr);
+                }
+            }
+            return str.ToString();
+        }
+
+        public void Add(ControlSelectorCode ctl, ControlPropertyCode prp, string objstr, bool explicitlyNotSpecialValue = false)
+            => Add(new ControlSelectorCode[] { ctl }, new ControlPropertyCode[] { prp }, objstr, explicitlyNotSpecialValue);
+        public void Add(IEnumerable<ControlSelectorCode> ctl, IEnumerable<ControlPropertyCode> prplist, string objstr, bool explicitlyNotSpecialValue = false)
+        {
+            foreach (var prp in prplist)
+            {
+                object objval;
+
+                if (!explicitlyNotSpecialValue)
+                { if (Enum.TryParse<SpecialValue>(objstr, out var sv)) { objval = sv; goto valset; } }
+
+                switch (prp)
+                {
+                    case ControlPropertyCode.BackgroundImage:
+                        throw new NotImplementedException();
+
+                    case ControlPropertyCode.FontStyle:
+                        objval = Enum.Parse(typeof(FontStyle), objstr);
+                        break;
+
+                    case ControlPropertyCode.ShowAlpha:
+                    case ControlPropertyCode.ShowRGB:
+                    case ControlPropertyCode.ShowBackButton:
+                    case ControlPropertyCode.ShowSelector:
+                    case ControlPropertyCode.Visible:
+                    case ControlPropertyCode.AutoSize:
+                        {
+                            objval = string.Equals("yes", objstr, StringComparison.OrdinalIgnoreCase)
+                            || string.Equals("true", objstr, StringComparison.OrdinalIgnoreCase)
+                            || (long.TryParse(objstr, out var x) && x != 0);
+                        }
+                        break;
+
+                    case ControlPropertyCode.Cursor:
+                        objval = new CursorConverter().ConvertFromInvariantString(objstr);
+                        break;
+
+                    case ControlPropertyCode.FontSize:
+                    case ControlPropertyCode.Scale:
+                        objval = float.Parse(objstr);
+                        break;
+
+                    case ControlPropertyCode.BigIncrement:
+                    case ControlPropertyCode.Increment:
+                    case ControlPropertyCode.Height:
+                    case ControlPropertyCode.Width:
+                        objval = int.Parse(objstr);
+                        break;
+
+                    case ControlPropertyCode.AlternateForeColour:
+                    case ControlPropertyCode.LowValueColour:
+                    case ControlPropertyCode.HighValueColour:
+                    case ControlPropertyCode.HoverColour:
+                    case ControlPropertyCode.Foreground:
+                    case ControlPropertyCode.Background:
+                    case ControlPropertyCode.ToggledBackground:
+                    case ControlPropertyCode.ToggledForeground:
+                        objstr = objstr.Trim();
+                        if (objstr.StartsWith("0x"))
+                        {
+                            objstr = objstr.Substring(2);
+                            goto hex;
+                        }
+                        if (objstr.StartsWith("#"))
+                        {
+                            objstr = objstr.Substring(1);
+                            goto hex;
+                        }
+                        {
+                            var c = Color.FromName(objstr);
+                            if (c.IsKnownColor)
+                            {
+                                objval = c;
+                                goto valset;
+                            }
+                        }
+                        {
+                            var split = new System.Text.RegularExpressions.Regex(@"\D+", System.Text.RegularExpressions.RegexOptions.Compiled);
+                            var c = split.Split(objstr);
+                            switch (c.Length)
+                            {
+                                case 3:
+                                    objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]));
+                                    goto valset;
+                                case 4:
+                                    objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]), byte.Parse(c[3]));
+                                    goto valset;
+                            }
+                        }
+                    cfail:
+                        throw new ArgumentException("No known colour or numeric colour representation: " + objstr);
+                    hex:
+                        {
+                            switch (objstr.Length)
+                            {
+                                case 3:
+                                    objval = Color.FromArgb(
+                                        0x11 * byte.Parse(objstr[0].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        0x11 * byte.Parse(objstr[1].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        0x11 * byte.Parse(objstr[2].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                    goto valset;
+                                case 6:
+                                    objval = Color.FromArgb(
+                                        byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                    goto valset;
+                                case 8:
+                                    objval = Color.FromArgb(
+                                        byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                        byte.Parse(objstr.Substring(6, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                    goto valset;
+                            }
+                        }
+                        goto cfail;
+
+                    default:
+                        objval = objstr;
+                        break;
+                }
+
+            valset:
+                foreach (var c in ctl)
+                {
+                    if (!TryGetValue(c, out var d))
+                    {
+                        d = new Dictionary<ControlPropertyCode, object>();
+                        Add(c, d);
+                    }
+                    d[prp] = objval;
+                }
+            }
         }
 
 
@@ -868,7 +1033,7 @@ namespace Sol.ShieldOfFaith
     {
         None,
         ResolveAutomatically = -1,
-
+        
         // tier 0 alternative roots
         ValueControl = 0x1,
         Misc = 0x2,

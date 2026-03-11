@@ -123,9 +123,6 @@ namespace Sol.ShieldOfFaith
             K_visualstyleson = "VisualStylesEnabled",
             K_visualstylesoff = "VisualStylesDisabled",
 
-            /// feature not added
-            K_HideUI = "Hide",
-
             K_MainBorder = "WindowBorder",
             K_MainLoc = "WindowLocation",
             K_MainSize = "WindowSize",
@@ -141,6 +138,8 @@ namespace Sol.ShieldOfFaith
             K_ShieldColourRed = "Shield colour#R",
             K_ShieldColourGreen = "Shield colour#G",
             K_ShieldColourBlue = "Shield colour#B",
+
+            K_ControlStyler = "Appearance",
 
             K_LoadError = "LastLoadError";
 
@@ -161,19 +160,6 @@ namespace Sol.ShieldOfFaith
             Correct("SaveWindowStatOnClose", K_savestate);
         }
 
-        public enum UIElement
-        {
-            ShieldColourSliders,
-            ShieldIntensitySlider,
-            ShieldColourButton,
-            ShieldWindowControl,
-
-            GlassParameterSlidersAll,
-            GlassWindowControl,
-
-            WindowControlShortcuts
-        }
-
         public List<string> LoadError
         {
             get
@@ -187,17 +173,11 @@ namespace Sol.ShieldOfFaith
             set => this[K_LoadError] = value;
         }
 
-        public IReadOnlyCollection<UIElement> HideUI
+        public string[] ControlStyleScript
         {
-            get
-            {
-                if (TryGetValue(K_HideUI, out var l) && l != null)
-                    return EnumsFromString<UIElement>(l);
-                return new UIElement[0];
-            }
-            set => Set(K_HideUI, value);
+            get => TryGetValue(K_ControlStyler, out var l) && l.Count > 0 ? l.ToArray() : null;
+            set => this[K_ControlStyler] = value == null || value.Length == 0 ? null : new List<string>(value);
         }
-
         public IEnumerable<Tuple<string, bool>> IncludedSettingsRequiredIfTrue
         {
             get

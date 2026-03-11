@@ -94,6 +94,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="ConcurrentWeakKeyDictionary.cs" />
+    <Compile Include="OrderSensitiveElementComparer.cs" />
     <EmbeddedResource Include="ColourManager.resx">
       <DependentUpon>ColourManager.cs</DependentUpon>
     </EmbeddedResource>
