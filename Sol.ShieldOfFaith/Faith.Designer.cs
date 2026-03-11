@@ -40,13 +40,13 @@
             this.buttonHelp = new System.Windows.Forms.Button();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.protectorShield = new Sol.ShieldOfFaith.ProtectorPanel();
-            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.flowLayoutShield = new System.Windows.Forms.FlowLayoutPanel();
             this.containerIntensityLimit = new System.Windows.Forms.GroupBox();
             this.inputIntensityLimit = new Sol.ShieldOfFaith.NumericTextBox();
             this.buttonPickMonitor = new System.Windows.Forms.Button();
             this.colourManagerShield = new Sol.ShieldOfFaith.ColourManager();
             this.protectorGlass = new Sol.ShieldOfFaith.ProtectorPanel();
-            this.flowLayoutPanel2 = new System.Windows.Forms.FlowLayoutPanel();
+            this.flowLayoutGlass = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonBreakGlass = new System.Windows.Forms.Button();
             this.toggleGlassWindow = new Sol.ShieldOfFaith.ButtonToggle();
             this.buttonRefresh = new Sol.ShieldOfFaith.ButtonToggle();
@@ -58,10 +58,10 @@
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.protectorShield.SuspendLayout();
-            this.flowLayoutPanel1.SuspendLayout();
+            this.flowLayoutShield.SuspendLayout();
             this.containerIntensityLimit.SuspendLayout();
             this.protectorGlass.SuspendLayout();
-            this.flowLayoutPanel2.SuspendLayout();
+            this.flowLayoutGlass.SuspendLayout();
             this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -228,7 +228,7 @@
             this.protectorShield.AdjustHeaderHeightToText = true;
             this.protectorShield.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.protectorShield.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.protectorShield.Controls.Add(this.flowLayoutPanel1);
+            this.protectorShield.Controls.Add(this.flowLayoutShield);
             this.protectorShield.Controls.Add(this.colourManagerShield);
             this.protectorShield.Dock = System.Windows.Forms.DockStyle.Fill;
             this.protectorShield.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
@@ -247,15 +247,15 @@
             this.protectorShield.Size = new System.Drawing.Size(341, 382);
             this.protectorShield.TabIndex = 8;
             // 
-            // flowLayoutPanel1
+            // flowLayoutShield
             // 
-            this.flowLayoutPanel1.Controls.Add(this.containerIntensityLimit);
-            this.flowLayoutPanel1.Controls.Add(this.buttonPickMonitor);
-            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 175);
-            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(339, 205);
-            this.flowLayoutPanel1.TabIndex = 11;
+            this.flowLayoutShield.Controls.Add(this.containerIntensityLimit);
+            this.flowLayoutShield.Controls.Add(this.buttonPickMonitor);
+            this.flowLayoutShield.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutShield.Location = new System.Drawing.Point(0, 148);
+            this.flowLayoutShield.Name = "flowLayoutShield";
+            this.flowLayoutShield.Size = new System.Drawing.Size(339, 232);
+            this.flowLayoutShield.TabIndex = 11;
             // 
             // containerIntensityLimit
             // 
@@ -298,7 +298,6 @@
             // 
             // colourManagerShield
             // 
-            this.colourManagerShield.AutoSize = true;
             this.colourManagerShield.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             // 
             // 
@@ -312,10 +311,9 @@
             this.colourManagerShield.BarAlpha.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarAlpha.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarAlpha.LowValueColor = System.Drawing.Color.Transparent;
-            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
-            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(303, 175);
+            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.colourManagerShield.BarAlpha.Name = "trackBoxAlpha";
-            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 175);
+            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 0);
             this.colourManagerShield.BarAlpha.TabIndex = 4;
             this.colourManagerShield.BarAlpha.Text = "intensity: ";
             this.colourManagerShield.BarAlpha.Value = 255;
@@ -330,10 +328,9 @@
             this.colourManagerShield.BarBlue.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarBlue.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarBlue.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
-            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
-            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(303, 175);
+            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.colourManagerShield.BarBlue.Name = "trackB";
-            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 1595);
+            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(0, 0);
             this.colourManagerShield.BarBlue.TabIndex = 3;
             this.colourManagerShield.BarBlue.Text = "blue : ";
             this.colourManagerShield.BarBlue.ValueToStringOverride = null;
@@ -349,10 +346,9 @@
             this.colourManagerShield.BarGreen.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarGreen.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarGreen.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
-            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(303, 175);
+            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.colourManagerShield.BarGreen.Name = "trackG";
-            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 1595);
+            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(0, 0);
             this.colourManagerShield.BarGreen.TabIndex = 2;
             this.colourManagerShield.BarGreen.Text = "green : ";
             this.colourManagerShield.BarGreen.ValueToStringOverride = null;
@@ -367,10 +363,9 @@
             this.colourManagerShield.BarRed.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarRed.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarRed.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
-            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(303, 175);
+            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(0, 0, 0, 0);
             this.colourManagerShield.BarRed.Name = "trackR";
-            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 1595);
+            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(0, 0);
             this.colourManagerShield.BarRed.TabIndex = 1;
             this.colourManagerShield.BarRed.Text = "red  :  ";
             this.colourManagerShield.BarRed.ValueToStringOverride = null;
@@ -382,7 +377,7 @@
             this.colourManagerShield.Dock = System.Windows.Forms.DockStyle.Top;
             this.colourManagerShield.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.Name = "colourManagerShield";
-            this.colourManagerShield.Size = new System.Drawing.Size(339, 175);
+            this.colourManagerShield.Size = new System.Drawing.Size(339, 148);
             this.colourManagerShield.TabIndex = 9;
             this.colourManagerShield.Value = System.Drawing.Color.Gray;
             this.colourManagerShield.ValueChanged += new System.EventHandler(this.colourManagerShield_ValueChanged);
@@ -392,7 +387,7 @@
             this.protectorGlass.AdjustHeaderHeightToText = true;
             this.protectorGlass.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.protectorGlass.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.protectorGlass.Controls.Add(this.flowLayoutPanel2);
+            this.protectorGlass.Controls.Add(this.flowLayoutGlass);
             this.protectorGlass.Dock = System.Windows.Forms.DockStyle.Fill;
             this.protectorGlass.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
             // 
@@ -411,16 +406,16 @@
             this.protectorGlass.Size = new System.Drawing.Size(338, 382);
             this.protectorGlass.TabIndex = 9;
             // 
-            // flowLayoutPanel2
+            // flowLayoutGlass
             // 
-            this.flowLayoutPanel2.Controls.Add(this.buttonBreakGlass);
-            this.flowLayoutPanel2.Controls.Add(this.toggleGlassWindow);
-            this.flowLayoutPanel2.Controls.Add(this.buttonRefresh);
-            this.flowLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel2.Location = new System.Drawing.Point(0, 0);
-            this.flowLayoutPanel2.Name = "flowLayoutPanel2";
-            this.flowLayoutPanel2.Size = new System.Drawing.Size(336, 380);
-            this.flowLayoutPanel2.TabIndex = 1;
+            this.flowLayoutGlass.Controls.Add(this.buttonBreakGlass);
+            this.flowLayoutGlass.Controls.Add(this.toggleGlassWindow);
+            this.flowLayoutGlass.Controls.Add(this.buttonRefresh);
+            this.flowLayoutGlass.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutGlass.Location = new System.Drawing.Point(0, 0);
+            this.flowLayoutGlass.Name = "flowLayoutGlass";
+            this.flowLayoutGlass.Size = new System.Drawing.Size(336, 380);
+            this.flowLayoutGlass.TabIndex = 1;
             // 
             // buttonBreakGlass
             // 
@@ -530,12 +525,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
             this.protectorShield.ResumeLayout(false);
-            this.protectorShield.PerformLayout();
-            this.flowLayoutPanel1.ResumeLayout(false);
+            this.flowLayoutShield.ResumeLayout(false);
             this.containerIntensityLimit.ResumeLayout(false);
             this.containerIntensityLimit.PerformLayout();
             this.protectorGlass.ResumeLayout(false);
-            this.flowLayoutPanel2.ResumeLayout(false);
+            this.flowLayoutGlass.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -559,9 +553,9 @@
         private ColourManager colourManagerShield;
         private System.Windows.Forms.GroupBox containerIntensityLimit;
         private NumericTextBox inputIntensityLimit;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutShield;
         private System.Windows.Forms.Button buttonPickMonitor;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutGlass;
         private System.Windows.Forms.Button buttonBreakGlass;
         private ButtonToggle toggleGlassWindow;
         private ButtonToggle buttonRefresh;

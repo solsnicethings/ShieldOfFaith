@@ -173,11 +173,23 @@ namespace Sol.ShieldOfFaith
             set => this[K_LoadError] = value;
         }
 
-        public string[] ControlStyleScript
+        public ICollection<string> ControlStyleScript
         {
             get => TryGetValue(K_ControlStyler, out var l) && l.Count > 0 ? l.ToArray() : null;
-            set => this[K_ControlStyler] = value == null || value.Length == 0 ? null : new List<string>(value);
+            set => this[K_ControlStyler] = value == null || value.Count == 0 ? null : new List<string>(value);
         }
+        public void SetControlStyleScript(string script)
+        {
+            var l = new List<string>();
+            using (var r = new StringReader(script))
+            {
+                string ine;
+                while ((ine = r.ReadLine()) != null)
+                    l.Add(ine);
+            }
+            this[K_ControlStyler] = l;
+        }
+
         public IEnumerable<Tuple<string, bool>> IncludedSettingsRequiredIfTrue
         {
             get

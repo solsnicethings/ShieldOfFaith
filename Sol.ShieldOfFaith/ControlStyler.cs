@@ -320,7 +320,7 @@ namespace Sol.ShieldOfFaith
         public IDictionary<Control, IDictionary<ControlPropertyCode, object>>
             original_property_control = new ConcurrentWeakKeyDictionary<Control, IDictionary<ControlPropertyCode, object>>();
 
-        public List<Dictionary<ControlPropertyCode, object>> GetPrioritisedSpecifications(ControlSelectorCode controlType)
+        List<Dictionary<ControlPropertyCode, object>> GetPrioritisedSpecifications(ControlSelectorCode controlType)
         {
             var l = new List<Dictionary<ControlPropertyCode, object>>();
 
@@ -960,6 +960,13 @@ namespace Sol.ShieldOfFaith
                         }
                     }
                     {
+                        if (c is Func<Control, Control.ControlCollection> f)
+                        {
+                            iterator = f(target).Cast<Control>();
+                            goto customchild;
+                        }
+                    }
+                    {
                         if (c is Func<Control, Control> f)
                         {
                             var found = f(target);
@@ -989,7 +996,27 @@ namespace Sol.ShieldOfFaith
             }
         }
 
+        void Set(ControlSelectorCode ctl, ControlPropertyCode prp, object value)
+        {
+            if (!TryGetValue(ctl, out var d))
+            {
+                d = new Dictionary<ControlPropertyCode, object>();
+                Add(ctl, d);
+            }
+            d[prp] = value;
+        }
+
+        public void SetControlChildIterator(ControlSelectorCode ctl, bool iterate_child_controls)
+        => Set(ctl, ControlPropertyCode.SubcontrolIterator, iterate_child_controls ? SpecialValue.Auto : SpecialValue.None);
+
+        public void SetControlChildIterator(ControlSelectorCode ctl, Func<Control, IEnumerable<Control>> f)
+        => Set(ctl, ControlPropertyCode.SubcontrolIterator, f);
+        public void SetControlChildIterator(ControlSelectorCode ctl, Func<Control, Control> f)
+        => Set(ctl, ControlPropertyCode.SubcontrolIterator, f);
+        public void SetControlChildIterator(ControlSelectorCode ctl, Func<Control, Control.ControlCollection> f)
+        => Set(ctl, ControlPropertyCode.SubcontrolIterator, f);
     }
+
     public enum ControlPropertyCode
     {
         NoProperty,

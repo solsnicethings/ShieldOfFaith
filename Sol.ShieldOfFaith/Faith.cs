@@ -90,6 +90,12 @@ namespace Sol.ShieldOfFaith
                 buttonRefresh.Enabled = false;
                 buttonRefresh.ToggledOn = false;
 
+                var x = new Control[protectorGlass.Controls.Count];
+                protectorGlass.Controls.CopyTo(x, 0);
+                foreach (var c in x)
+                    if (c != flowLayoutGlass && c != protectorGlass.Header)
+                        c.Dispose();
+
                 protectorGlass.ResumeLayout();
             }
 
@@ -522,6 +528,8 @@ namespace Sol.ShieldOfFaith
             return true;
         }
 
+        readonly ControlStyler styler = new ControlStyler();
+
         private void Faith_Load(object sender, EventArgs e)
         {
             if (!Program.Settings.StartupWindow.Contains(Settings.StartupWindows.Main))
@@ -537,6 +545,44 @@ namespace Sol.ShieldOfFaith
             BorderlessResizer.WindowResizer.ApplyWindowResizer(this);
 
             colourManagerShield.Value = Program.Settings.ShieldColorAndIntensity;
+
+            {
+                styler.ControlTypeResolver = (c, ode) =>
+                {
+                    if (c == protectorShield)
+                        return ControlSelectorCode.ShieldOfFaithPanel;
+                    if (c == protectorGlass)
+                        return ControlSelectorCode.ShaderGlassPanel;
+                    if (c == toggleButtonShield)
+                        return ControlSelectorCode.ShieldOfFaithButton;
+                    if (c == toggleButtonGlass)
+                        return ControlSelectorCode.ShaderGlassButton;
+                    return ControlSelectorCode.ResolveAutomatically;
+                };
+
+                IEnumerable<Control> shieldren(Control c)
+                {
+                    foreach (Control child in c.Controls)
+                    {
+                        if (child == flowLayoutGlass || child == flowLayoutShield)
+                        {
+                            foreach (Control wild in child.Controls)
+                                yield return wild;
+                        }
+                        else yield return child;
+                    }
+                }
+
+                styler.SetControlChildIterator(ControlSelectorCode.ShieldOfFaithPanel, shieldren);
+                styler.SetControlChildIterator(ControlSelectorCode.ShaderGlassPanel, shieldren);
+
+                var s = Program.Settings.ControlStyleScript;
+                if (s != null)
+                {
+                    styler.Parse(s);
+                    styler.ApplyTo(this);
+                }
+            }
         }
 
         Size lastsize; Point lastplace;
