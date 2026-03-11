@@ -25,6 +25,130 @@ namespace Sol.ShieldOfFaith
             Original
         }
 
+        public void Add(ControlSelectorCode ctl, ControlPropertyCode prp, string objstr)
+        {
+            object objval;
+
+            { if (Enum.TryParse<SpecialValue>(objstr, out var sv)) { objval = sv; goto valset; } }
+
+            switch (prp)
+            {
+                case ControlPropertyCode.BackgroundImage:
+                    throw new NotImplementedException();
+
+                case ControlPropertyCode.FontStyle:
+                    objval = Enum.Parse(typeof(FontStyle), objstr);
+                    break;
+
+                case ControlPropertyCode.ShowAlpha:
+                case ControlPropertyCode.ShowRGB:
+                case ControlPropertyCode.ShowBackButton:
+                case ControlPropertyCode.ShowSelector:
+                case ControlPropertyCode.Visible:
+                case ControlPropertyCode.AutoSize:
+                    {
+                        objval = string.Equals("yes", objstr, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals("true", objstr, StringComparison.OrdinalIgnoreCase)
+                        || (long.TryParse(objstr, out var x) && x != 0);
+                    }
+                    break;
+                
+                case ControlPropertyCode.Cursor:
+                    objval = new CursorConverter().ConvertFromInvariantString(objstr);
+                    break;
+
+                case ControlPropertyCode.FontSize:
+                case ControlPropertyCode.Scale:
+                    objval = float.Parse(objstr);
+                    break;
+
+                case ControlPropertyCode.BigIncrement:
+                case ControlPropertyCode.Increment:
+                case ControlPropertyCode.Height:
+                case ControlPropertyCode.Width:
+                    objval = int.Parse(objstr);
+                    break;
+
+                    
+
+                case ControlPropertyCode.AlternateForeColour:
+                case ControlPropertyCode.LowValueColour:
+                case ControlPropertyCode.HighValueColour:
+                case ControlPropertyCode.HoverColour:
+                case ControlPropertyCode.Foreground:
+                case ControlPropertyCode.Background:
+                case ControlPropertyCode.ToggledBackground:
+                case ControlPropertyCode.ToggledForeground:
+                    objstr = objstr.Trim();
+                    if (objstr.StartsWith("0x"))
+                    {
+                        objstr = objstr.Substring(2);
+                        goto hex;
+                    }
+                    if (objstr.StartsWith("#"))
+                    {
+                        objstr = objstr.Substring(1);
+                        goto hex;
+                    }
+                    {
+                        var c = Color.FromName(objstr);
+                        if (c.IsKnownColor)
+                        {
+                            objval = c;
+                            goto valset;
+                        }
+                    }
+                    {
+                        var split = new System.Text.RegularExpressions.Regex(@"\D+", System.Text.RegularExpressions.RegexOptions.Compiled);
+                        var c = split.Split(objstr);
+                        switch (c.Length)
+                        {
+                            case 3:
+                                objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]));
+                                goto valset;
+                            case 4:
+                                objval = Color.FromArgb(byte.Parse(c[0]), byte.Parse(c[1]), byte.Parse(c[2]), byte.Parse(c[3]));
+                                goto valset;
+                        }
+                    }
+                cfail:
+                    throw new ArgumentException("No known colour or numeric colour representation: " + objstr);
+                hex:
+                    {
+                        switch (objstr.Length)
+                        {
+                            case 3:
+                                objval = Color.FromArgb(
+                                    0x11 * byte.Parse(objstr[0].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    0x11 * byte.Parse(objstr[1].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    0x11 * byte.Parse(objstr[2].ToString(), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                goto valset;
+                            case 6:
+                                objval = Color.FromArgb(
+                                    byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                goto valset;
+                            case 8:
+                                objval = Color.FromArgb(
+                                    byte.Parse(objstr.Substring(0, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    byte.Parse(objstr.Substring(2, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    byte.Parse(objstr.Substring(4, 2), System.Globalization.NumberStyles.AllowHexSpecifier),
+                                    byte.Parse(objstr.Substring(6, 2), System.Globalization.NumberStyles.AllowHexSpecifier));
+                                goto valset;
+                        }
+                    }
+                    goto cfail;
+
+                default:
+                    objval = objstr;
+                    break;
+            }
+
+        valset:;
+        }
+
+
         public Func<Control, ControlSelectorCode, ControlSelectorCode>
             ControlTypeResolver;
 
@@ -334,6 +458,8 @@ namespace Sol.ShieldOfFaith
                         level = new Dictionary<ControlPropertyCode, object>();
                     }
                 }
+
+                foreach (var x in cpc) if (x != ControlPropertyCode.NoProperty) level.Add(x, SpecialValue.Auto);
             }
             IEnumerable<object> GetValue(ControlPropertyCode cpc)
             {
@@ -350,9 +476,10 @@ namespace Sol.ShieldOfFaith
                         }
                         yield return v;
                     }
+                yield return SpecialValue.Auto;
             }
 
-            void ResolveColour(Action<Color> assign_direct, Func<Color> getCurrent, Func<Color> getContext, IEnumerable<object> value)
+            void ResolveColour(Action<Color> assign_direct, Func<Color> getCurrent, Func<Color> getContext, IEnumerable<object> value, Func<Color> auto = null)
             {
                 Action<Color> assign = c => { recorder(); assign_direct(c); };
                 foreach (var v in value)
@@ -373,8 +500,14 @@ namespace Sol.ShieldOfFaith
                     if (v is SpecialValue s)
                         switch (s)
                         {
+                            case SpecialValue.Auto:
+                                assign((auto ?? getContext).Invoke());
+                                return;
                             case SpecialValue.Inherit:
                                 assign(getContext());
+                                return;
+                            case SpecialValue.None:
+                                assign(Color.Transparent);
                                 return;
 
                             // original isn't passed to this function unless the control property is unchanged
@@ -383,7 +516,7 @@ namespace Sol.ShieldOfFaith
                         }
                 }
             }
-            void Resolve<T>(Action<T> assign_direct, Func<T> getCurrent, Func<T> getContext, IEnumerable<object> value)
+            void Resolve<T>(Action<T> assign_direct, Func<T> getCurrent, Func<T> getContext, IEnumerable<object> value, Func<T> auto = null)
             {
                 Action<T> assign = c => { recorder(); assign_direct(c); };
                 foreach (var v in value)
@@ -396,8 +529,10 @@ namespace Sol.ShieldOfFaith
                             case SpecialValue.Inherit:
                                 assign(getContext());
                                 return;
-                            case SpecialValue.None:
                             case SpecialValue.Auto:
+                                assign((auto ?? getContext).Invoke());
+                                return;
+                            case SpecialValue.None:
                                 assign(default(T));
                                 return;
 
@@ -478,7 +613,7 @@ namespace Sol.ShieldOfFaith
             
             {
                 object ffam = null, fem = null, fst = null;
-                Font template = null;
+                Font template = null, original_parent_font = null;
                 foreach (var font in Get(ControlPropertyCode.Font, ControlPropertyCode.FontStyle, ControlPropertyCode.FontSize, ControlPropertyCode.FontFamily))
                 {
                     if (ffam == null && font.TryGetValue(ControlPropertyCode.FontFamily, out var v))
@@ -499,6 +634,22 @@ namespace Sol.ShieldOfFaith
                                     if (target.Parent != null)
                                         target.Font = target.Parent.Font;
                                     break;
+                                case SpecialValue.Auto:
+                                    if (ffam == null)
+                                        ffam = SpecialValue.Auto;
+                                    if (fem == null)
+                                        fem = SpecialValue.Auto;
+                                    if (fst == null)
+                                        fst = SpecialValue.Auto;
+                                    if (original_property_control.TryGetValue(target, out var ctl) && ctl.TryGetValue(ControlPropertyCode.Font, out var fnt))
+                                        target.Font = (Font)fnt;
+                                    if (target.Parent != null)
+                                    {
+                                        if (original_property_control.TryGetValue(target.Parent, out ctl) && ctl.TryGetValue(ControlPropertyCode.Font, out fnt))
+                                            original_parent_font = (Font)fnt;
+                                        else original_parent_font = target.Parent.Font;
+                                    }
+                                    break;
                             }
                         template = target.Font;
                         break;
@@ -515,20 +666,33 @@ namespace Sol.ShieldOfFaith
 
                         switch (ffam as SpecialValue?)
                         {
+                            case SpecialValue.Auto:
+                                if (original_parent_font == null)
+                                    set_ffam = template.FontFamily;
+                                else if (original_parent_font.FontFamily == template.FontFamily)
+                                    set_ffam = target.Parent.Font.FontFamily;
+                                else set_ffam = template.FontFamily;
+                                break;
                             case SpecialValue.Inherit:
-                                set_ffam = inh.FontFamily;
-                                break;
-                            default:
-                                set_ffam = ffam is string ?
-                                    new FontFamily((string)ffam) :
-                                    ffam is FontFamily ? (FontFamily)ffam : template.FontFamily;
-                                break;
-                        }
+                                        set_ffam = inh.FontFamily;
+                                        break;
+                                    default:
+                                        set_ffam = ffam is string ?
+                                            new FontFamily((string)ffam) :
+                                            ffam is FontFamily ? (FontFamily)ffam : template.FontFamily;
+                                        break;
+                                    }
 
                         float set_fem;
 
                         switch (fem as SpecialValue?)
                         {
+                            case SpecialValue.Auto:
+                                if (original_parent_font == null)
+                                    set_fem = template.SizeInPoints;
+                                else
+                                    set_fem = target.Parent.Font.SizeInPoints * template.SizeInPoints / original_parent_font.SizeInPoints;
+                                break;
                             case SpecialValue.Inherit:
                                 set_fem = inh.SizeInPoints;
                                 break;
@@ -541,6 +705,19 @@ namespace Sol.ShieldOfFaith
 
                         switch (fst as SpecialValue?)
                         {
+                            case SpecialValue.Auto:
+                                if (original_parent_font == null)
+                                    set_fst = template.Style;
+                                else
+                                {
+                                    FontStyle rst = original_parent_font.Style, tst = template.Style, inhst = target.Parent.Font.Style, mk = 0;
+
+                                    foreach (FontStyle f in Enum.GetValues(typeof(FontStyle)))
+                                        if ((((rst & f) == (tst & f) ? inhst : tst) & f) != 0) mk |= f;
+
+                                    set_fst = mk;
+                                }
+                                break;
                             case SpecialValue.Inherit:
                                 set_fst = inh.Style;
                                 break;

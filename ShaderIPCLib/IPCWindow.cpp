@@ -40,13 +40,13 @@ bool IPCWindow::SetStatedataFromMemBlock(Type* data)
     void* statedata = this->statedata;
     if(statedata)
     {
-        delete statedata;
+        delete[] statedata;
         this->statedata = nullptr;
     }
     if(!data)
         return true;
 
-    statedata = new Type();
+    statedata = new Type[1];
     if(!statedata)
         return false;
     memcpy(statedata, data, sizeof(Type));
@@ -260,7 +260,7 @@ BOOL IPCWindow::QueueReceivedData(HWND from, COPYDATASTRUCT* data)
     receive->dwData = data->dwData;
     auto size      = data->cbData;
     receive->cbData = size;
-    receive->lpData = malloc(size);
+    receive->lpData = size ? new long long[(size + sizeof(long long) - 1) / sizeof(long long)] : nullptr;
     memcpy_s(receive->lpData, size, data->lpData, size);
     auto addInbound = new std::tuple<HWND, COPYDATASTRUCT*, void**>(from, receive, new void*[1] { nullptr });
     auto q = this->InboundMessageQueue;
@@ -283,9 +283,9 @@ BOOL IPCWindow::QueueReceivedData(HWND from, COPYDATASTRUCT* data)
     BOOL r = PostMessage(self, IPCWCode::NewData, (WPARAM)self, 0);
     if(!r)
     {
-        free(receive->lpData);
-        delete(receive);
-        delete(addInbound);
+        delete[] receive->lpData;
+        delete receive;
+        delete addInbound;
         if(q)
             std::get<2>(*q)[0] = nullptr;
         else
@@ -421,15 +421,19 @@ LRESULT IPCWindow::WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return TRUE;
     }
     case IPCWCode::NewData: {
-        auto dequeue        = InboundMessageQueue;
-        auto src            = std::get<0>(*dequeue);
-        auto data           = std::get<1>(*dequeue);
-        InboundMessageQueue = static_cast<decltype(dequeue)>(*std::get<2>(*dequeue));
-        HandleQueuedData(src, data);
-        free(data->lpData);
-        delete data;
-        delete dequeue;
-        return 0;
+        for(;;)
+        {
+            auto dequeue = InboundMessageQueue;
+            if(!dequeue)
+                return 0;
+            InboundMessageQueue = static_cast<decltype(dequeue)>(*std::get<2>(*dequeue));
+            auto src            = std::get<0>(*dequeue);
+            auto data           = std::get<1>(*dequeue);
+            HandleQueuedData(src, data);
+            delete[] data->lpData;
+            delete data;
+            delete dequeue;
+        }
     }
     case IPCWCode::CompletingHandshakeResponse: {
         if(state == CompletingHandshakeResponse)
