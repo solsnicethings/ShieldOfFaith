@@ -37,8 +37,30 @@ namespace Sol.ShieldOfFaith
             var e = new EventArgsColourSelect();
             if (ToggledOn)
             {
-                e.SelectForeground = BackColor;
-                e.SelectBackground = ForeColor;
+                switch (tForeground.A)
+                {
+                    case 255:
+                        e.SelectForeground = tForeground;
+                        break;
+                    case 0:
+                        e.SelectForeground = BackColor;
+                        break;
+                    default:
+                        e.SelectForeground = FormsUtil.Mix(Color.FromArgb(255, tForeground), BackColor, tForeground.A / 255.0);
+                        break;
+                }
+                switch (tBackground.A)
+                {
+                    case 255:
+                        e.SelectBackground = tBackground;
+                        break;
+                    case 0:
+                        e.SelectBackground = ForeColor;
+                        break;
+                    default:
+                        e.SelectBackground = FormsUtil.Mix(Color.FromArgb(255, tBackground), ForeColor, tBackground.A / 255.0);
+                        break;
+                }
             }
             else
             {
@@ -48,6 +70,33 @@ namespace Sol.ShieldOfFaith
             ToggleColourReevaluate?.Invoke(this, e);
             buttoff.ForeColor = e.SelectForeground;
             buttoff.BackColor = e.SelectBackground;
+        }
+
+        Color tForeground = Color.Transparent, tBackground = Color.Transparent;
+
+        public Color ToggledForeColour
+        {
+            get => tForeground;
+            set
+            {
+                if (value == tForeground)
+                    return;
+                tForeground = value;
+                if (ToggledOn)
+                    ReevaluateToggleColour();
+            }
+        }
+        public Color ToggledBackColour
+        {
+            get => tBackground;
+            set
+            {
+                if (value == tBackground)
+                    return;
+                tBackground = value;
+                if (ToggledOn)
+                    ReevaluateToggleColour();
+            }
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -112,11 +161,6 @@ namespace Sol.ShieldOfFaith
             }
         }
 
-        void toggle_shading()
-        {
-
-        }
-
         private void Buttoff_Click(object sender, EventArgs e)
         {
             ToggledOn = !ToggledOn;
@@ -125,7 +169,7 @@ namespace Sol.ShieldOfFaith
         public override Color BackColor { get => base.BackColor; set { base.BackColor = value; ReevaluateToggleColour(); ; } }
         public override Color ForeColor { get => base.ForeColor; set { base.ForeColor = value; ReevaluateToggleColour(); ; } }
 
-        Color disabledColor = Color.FromArgb(192, 128, 128, 128);
+        Color disabledColor = Color.FromArgb(172, 108, 108, 108);
         public Color DisabledColorBlend
         {
             get => disabledColor; set

@@ -145,7 +145,7 @@
             this.toggleButtonGlass.AutoEllipsis = false;
             this.toggleButtonGlass.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.toggleButtonGlass.DialogResult = System.Windows.Forms.DialogResult.None;
-            this.toggleButtonGlass.DisabledColorBlend = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
+            this.toggleButtonGlass.DisabledColorBlend = System.Drawing.Color.Empty;
             this.toggleButtonGlass.Dock = System.Windows.Forms.DockStyle.Left;
             this.toggleButtonGlass.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
             this.toggleButtonGlass.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
@@ -161,9 +161,10 @@
             this.toggleButtonGlass.Text = "Shader Glass app";
             this.toggleButtonGlass.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.toggleButtonGlass.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
+            this.toggleButtonGlass.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.toggleButtonGlass.ToggledForeColour = System.Drawing.Color.Transparent;
             this.toggleButtonGlass.ToggledOn = false;
             this.toggleButtonGlass.UseVisualStyleBackColor = false;
-            this.toggleButtonGlass.ToggleColourReevaluate += new Sol.ShieldOfFaith.StateColourReevaluate(this.toggle_reevaluate);
             this.toggleButtonGlass.Toggled += new System.EventHandler(this.toggleButtonGlass_Toggled);
             // 
             // toggleButtonShield
@@ -173,7 +174,7 @@
             this.toggleButtonShield.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("toggleButtonShield.BackgroundImage")));
             this.toggleButtonShield.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.toggleButtonShield.DialogResult = System.Windows.Forms.DialogResult.None;
-            this.toggleButtonShield.DisabledColorBlend = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
+            this.toggleButtonShield.DisabledColorBlend = System.Drawing.Color.Empty;
             this.toggleButtonShield.Dock = System.Windows.Forms.DockStyle.Left;
             this.toggleButtonShield.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
             this.toggleButtonShield.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(170)))), ((int)(((byte)(170)))), ((int)(((byte)(0)))));
@@ -188,9 +189,10 @@
             this.toggleButtonShield.TabIndex = 10;
             this.toggleButtonShield.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.toggleButtonShield.TextImageRelation = System.Windows.Forms.TextImageRelation.TextAboveImage;
+            this.toggleButtonShield.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.toggleButtonShield.ToggledForeColour = System.Drawing.Color.Transparent;
             this.toggleButtonShield.ToggledOn = false;
             this.toggleButtonShield.UseVisualStyleBackColor = false;
-            this.toggleButtonShield.ToggleColourReevaluate += new Sol.ShieldOfFaith.StateColourReevaluate(this.toggle_reevaluate);
             this.toggleButtonShield.Toggled += new System.EventHandler(this.toggleButtonShield_Toggled);
             // 
             // buttonHelp
@@ -250,9 +252,9 @@
             this.flowLayoutPanel1.Controls.Add(this.containerIntensityLimit);
             this.flowLayoutPanel1.Controls.Add(this.buttonPickMonitor);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 114);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 175);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(339, 266);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(339, 205);
             this.flowLayoutPanel1.TabIndex = 11;
             // 
             // containerIntensityLimit
@@ -310,10 +312,10 @@
             this.colourManagerShield.BarAlpha.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarAlpha.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarAlpha.LowValueColor = System.Drawing.Color.Transparent;
-            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
-            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(202, 114);
+            this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
+            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(303, 175);
             this.colourManagerShield.BarAlpha.Name = "trackBoxAlpha";
-            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 114);
+            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(339, 175);
             this.colourManagerShield.BarAlpha.TabIndex = 4;
             this.colourManagerShield.BarAlpha.Text = "intensity: ";
             this.colourManagerShield.BarAlpha.Value = 255;
@@ -328,10 +330,10 @@
             this.colourManagerShield.BarBlue.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarBlue.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarBlue.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
-            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
-            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(202, 114);
+            this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
+            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(303, 175);
             this.colourManagerShield.BarBlue.Name = "trackB";
-            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 1037);
+            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 1595);
             this.colourManagerShield.BarBlue.TabIndex = 3;
             this.colourManagerShield.BarBlue.Text = "blue : ";
             this.colourManagerShield.BarBlue.ValueToStringOverride = null;
@@ -347,10 +349,10 @@
             this.colourManagerShield.BarGreen.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarGreen.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarGreen.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
-            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(202, 114);
+            this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
+            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(303, 175);
             this.colourManagerShield.BarGreen.Name = "trackG";
-            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 1037);
+            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 1595);
             this.colourManagerShield.BarGreen.TabIndex = 2;
             this.colourManagerShield.BarGreen.Text = "green : ";
             this.colourManagerShield.BarGreen.ValueToStringOverride = null;
@@ -365,10 +367,10 @@
             this.colourManagerShield.BarRed.HoveredValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarRed.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarRed.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(72, 80, 72, 80);
-            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(202, 114);
+            this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(108, 123, 108, 123);
+            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(303, 175);
             this.colourManagerShield.BarRed.Name = "trackR";
-            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 1037);
+            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 1595);
             this.colourManagerShield.BarRed.TabIndex = 1;
             this.colourManagerShield.BarRed.Text = "red  :  ";
             this.colourManagerShield.BarRed.ValueToStringOverride = null;
@@ -380,7 +382,7 @@
             this.colourManagerShield.Dock = System.Windows.Forms.DockStyle.Top;
             this.colourManagerShield.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.Name = "colourManagerShield";
-            this.colourManagerShield.Size = new System.Drawing.Size(339, 114);
+            this.colourManagerShield.Size = new System.Drawing.Size(339, 175);
             this.colourManagerShield.TabIndex = 9;
             this.colourManagerShield.Value = System.Drawing.Color.Gray;
             this.colourManagerShield.ValueChanged += new System.EventHandler(this.colourManagerShield_ValueChanged);
@@ -448,6 +450,8 @@
             this.toggleGlassWindow.Text = "&Window mode";
             this.toggleGlassWindow.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.toggleGlassWindow.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
+            this.toggleGlassWindow.ToggledBackColour = System.Drawing.Color.Transparent;
+            this.toggleGlassWindow.ToggledForeColour = System.Drawing.Color.Transparent;
             this.toggleGlassWindow.ToggledOn = false;
             this.toggleGlassWindow.UseVisualStyleBackColor = false;
             this.toggleGlassWindow.Toggled += new System.EventHandler(this.toggleGlassWindow_Toggled);
@@ -471,6 +475,8 @@
             this.buttonRefresh.Text = "&Refresh button not working well";
             this.buttonRefresh.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.buttonRefresh.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
+            this.buttonRefresh.ToggledBackColour = System.Drawing.Color.Transparent;
+            this.buttonRefresh.ToggledForeColour = System.Drawing.Color.Transparent;
             this.buttonRefresh.ToggledOn = false;
             this.buttonRefresh.UseVisualStyleBackColor = false;
             this.buttonRefresh.Visible = false;

@@ -82,6 +82,7 @@
     <Compile Include="ProtectorPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="RetainedWeakReferenceEqualityComparer.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Shield.cs">
       <SubType>Form</SubType>
@@ -92,6 +93,7 @@
     <Compile Include="TrackBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="ConcurrentWeakKeyDictionary.cs" />
     <EmbeddedResource Include="ColourManager.resx">
       <DependentUpon>ColourManager.cs</DependentUpon>
     </EmbeddedResource>

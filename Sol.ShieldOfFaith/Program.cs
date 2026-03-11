@@ -297,8 +297,19 @@ namespace Sol.ShieldOfFaith
             if (Problem.Count == 0) Problem = null;
 
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Faith());
 
+            {
+                Faith in_fundamental_solidarity = new Faith();
+                try
+                {
+
+                    Application.Run(in_fundamental_solidarity);
+                }
+                finally
+                {
+                    in_fundamental_solidarity.ClearIPC(false);
+                }
+            }
 
             if (Settings.SaveSettingsOnClose != Settings.When.Never)
                 try 

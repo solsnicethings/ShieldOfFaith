@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,13 +17,19 @@ namespace Sol.ShieldOfFaith
         {
             Inherit,
             Auto,
-            Min,
-            Max,
-            None
+            None,
+
+            /// <summary>
+            /// is replaced with original value before assignment procedures, except when no original value has been collected yet
+            /// </summary>
+            Original
         }
 
         public Func<Control, ControlSelectorCode, ControlSelectorCode>
             ControlTypeResolver;
+
+        public IDictionary<Control, IDictionary<ControlPropertyCode, object>>
+            original_property_control = new ConcurrentWeakKeyDictionary<Control, IDictionary<ControlPropertyCode, object>>();
 
         public List<Dictionary<ControlPropertyCode, object>> GetPrioritisedSpecifications(ControlSelectorCode controlType)
         {
@@ -125,16 +134,202 @@ namespace Sol.ShieldOfFaith
 
             var pspec = GetPrioritisedSpecifications(ct);
 
+            Action recorder = null;
+
+            Action<IDictionary<ControlPropertyCode, object>> TryAdd(ControlPropertyCode key, Func<Control, object> value)
+            {
+                return tryadd =>
+                {
+                    if (!tryadd.ContainsKey(key))
+                        tryadd.Add(key, value(target));
+                };
+            }
+
+            Action SetRecorder(params ControlPropertyCode[] code)
+            {
+                var action_list = new List<Action<IDictionary<ControlPropertyCode, object>>>(code.Length);
+                var rerun = new Dictionary<ControlPropertyCode, object>();
+                foreach (var c in code)
+                {
+                    switch (c)
+                    {
+                        case ControlPropertyCode.NoProperty:
+                            break;
+
+                        case ControlPropertyCode.AutoSize:
+                            action_list.Add(TryAdd(c, ctl => ctl.AutoSize));
+                            break;
+                        case ControlPropertyCode.Background:
+                            action_list.Add(TryAdd(c, ctl => ctl.BackColor));
+                            break;
+                        case ControlPropertyCode.BackgroundImage:
+                            action_list.Add(TryAdd(c, ctl => ctl.BackgroundImage));
+                            break;
+                        case ControlPropertyCode.Cursor:
+                            action_list.Add(TryAdd(c, ctl => ctl.Cursor));
+                            break;
+
+                        case ControlPropertyCode.Foreground:
+                            action_list.Add(TryAdd(c, ctl => ctl.ForeColor));
+                            break;
+
+                        case ControlPropertyCode.FontSize:
+                        case ControlPropertyCode.FontFamily:
+                        case ControlPropertyCode.FontStyle:
+                            rerun[ControlPropertyCode.Font] = null;
+                            break;
+
+                        case ControlPropertyCode.Height:
+                            action_list.Add(TryAdd(c, ctl => ctl.Height));
+                            break;
+                        case ControlPropertyCode.Scale:
+                            // defaults to 1
+                            break;
+
+                        case ControlPropertyCode.ShowAlpha:
+                            if (target is ColourManager)
+                                action_list.Add(TryAdd(c, ctl => ((ColourManager)ctl).DisplayAlpha));
+                            break;
+                        case ControlPropertyCode.ShowRGB:
+                            if (target is ColourManager)
+                                action_list.Add(TryAdd(c, ctl => ((ColourManager)ctl).DisplayRGB));
+                            break;
+                        case ControlPropertyCode.ShowSelector:
+                            if (target is ColourManager)
+                                action_list.Add(TryAdd(c, ctl => ((ColourManager)ctl).DisplayColourPick));
+                            break;
+                        case ControlPropertyCode.ShowBackButton:
+                            if (target is ColourManager)
+                                action_list.Add(TryAdd(c, ctl => ((ColourManager)ctl).DisplayPreviousPick));
+                            break;
+
+                        case ControlPropertyCode.SubcontrolIterator:
+                            break;
+
+                        case ControlPropertyCode.ToggledBackground:
+                            if (target is ButtonToggle)
+                                action_list.Add(TryAdd(c, ctl => ((ButtonToggle)ctl).ToggledBackColour));
+                            break;
+                        case ControlPropertyCode.ToggledForeground:
+                            if (target is ButtonToggle)
+                                action_list.Add(TryAdd(c, ctl => ((ButtonToggle)ctl).ToggledForeColour));
+                            break;
+
+                        case ControlPropertyCode.Visible:
+                            action_list.Add(TryAdd(c, ctl => ctl.Visible));
+                            break;
+                        case ControlPropertyCode.Width:
+                            action_list.Add(TryAdd(c, ctl => ctl.Width));
+                            break;
+
+                        case ControlPropertyCode.Increment:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).SmallIncrement));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).SmallIncrement));
+                            else if (target is NumericUpDown)
+                                action_list.Add(TryAdd(c, ctl => ((NumericUpDown)ctl).Increment));
+                            break;
+
+                        case ControlPropertyCode.BigIncrement:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).BigIncrement));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).BigIncrement));
+                            break;
+
+                        case ControlPropertyCode.HoverColour:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).HoveredValueColor));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).HoveredValueColor));
+                            break;
+
+                        case ControlPropertyCode.LowValueColour:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).LowValueColor));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).LowValueColor));
+                            break;
+
+                        case ControlPropertyCode.HighValueColour:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).HighValueColor));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).HighValueColor));
+                            break;
+
+                        case ControlPropertyCode.AlternateForeColour:
+                            if (target is TrackBox.Composite)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox.Composite)ctl).AlternateTextColor));
+                            else if (target is TrackBox)
+                                action_list.Add(TryAdd(c, ctl => ((TrackBox)ctl).AlternateTextColor));
+                            break;
+
+
+
+                        default:
+                                    rerun[c] = null;
+                                    break;
+                                }
+                }
+
+                foreach (var c in rerun.Keys)
+                {
+                    switch (c)
+                    {
+                        case ControlPropertyCode.Font:
+                            action_list.Add(TryAdd(c, ctl => ctl.Font));
+                            break;
+                    }
+                }
+
+                if (action_list.Count == 0)
+                    return () => { };
+
+                return SetRecorderActions(action_list.ToArray());
+            }
+            Action SetRecorderActions(params Action<IDictionary<ControlPropertyCode, object>>[] actions)
+            { 
+                return () =>
+                {
+                    if (!original_property_control.TryGetValue(target, out var pl))
+                    {
+                        pl = new Dictionary<ControlPropertyCode, object>();
+                        original_property_control.Add(target, pl);
+                    }
+                    foreach (var a in actions) a(pl);
+                };
+            }
+
             IEnumerable<Dictionary<ControlPropertyCode, object>> Get(params ControlPropertyCode[] cpc)
             {
                 var level = new Dictionary<ControlPropertyCode, object>();
+                var rec = true;
+                if (!original_property_control.TryGetValue(target, out var originals))
+                    originals = null;
+
                 foreach (var spec in pspec)
                 {
-                    foreach (var x in cpc)
+                    for (int i = 0; i < cpc.Length; i++)
+                    {
+                        var x = cpc[i];
+                        if (x == ControlPropertyCode.NoProperty)
+                            continue;
                         if (spec.TryGetValue(x, out var v))
+                        {
+                            if (v as SpecialValue? == SpecialValue.Original)
+                            {
+                                if (originals != null && !originals.TryGetValue(x, out v))
+                                    v = SpecialValue.Original;
+                                cpc[i] = ControlPropertyCode.NoProperty;
+                            }
                             level.Add(x, v);
+                        }
+                    }
                     if (level.Count > 0)
                     {
+                        if (rec) { SetRecorder(cpc); rec = false; }
                         yield return level;
                         level = new Dictionary<ControlPropertyCode, object>();
                     }
@@ -142,13 +337,24 @@ namespace Sol.ShieldOfFaith
             }
             IEnumerable<object> GetValue(ControlPropertyCode cpc)
             {
+                var rec = true;
                 foreach (var spec in pspec)
                     if (spec.TryGetValue(cpc, out var v))
+                    {
+                        if (rec) { SetRecorder(cpc); rec = false; }
+                        if (v as SpecialValue? == SpecialValue.Original) 
+                        {
+                            if (original_property_control.TryGetValue(target, out var d))
+                                yield return d.TryGetValue(cpc, out v) ? v : SpecialValue.Original;
+                            yield break;
+                        }
                         yield return v;
+                    }
             }
 
-            void ResolveColour(Action<Color> assign, Func<Color> getContext, IEnumerable<object> value)
+            void ResolveColour(Action<Color> assign_direct, Func<Color> getCurrent, Func<Color> getContext, IEnumerable<object> value)
             {
+                Action<Color> assign = c => { recorder(); assign_direct(c); };
                 foreach (var v in value)
                 {
                     if (v is Color c)
@@ -170,13 +376,233 @@ namespace Sol.ShieldOfFaith
                             case SpecialValue.Inherit:
                                 assign(getContext());
                                 return;
+
+                            // original isn't passed to this function unless the control property is unchanged
+                            case SpecialValue.Original:
+                                return;
                         }
                 }
-                assign(getContext());
+            }
+            void Resolve<T>(Action<T> assign_direct, Func<T> getCurrent, Func<T> getContext, IEnumerable<object> value)
+            {
+                Action<T> assign = c => { recorder(); assign_direct(c); };
+                foreach (var v in value)
+                {
+                    if (v is T c)
+                        assign(c);
+                    if (v is SpecialValue s)
+                        switch (s)
+                        {
+                            case SpecialValue.Inherit:
+                                assign(getContext());
+                                return;
+                            case SpecialValue.None:
+                            case SpecialValue.Auto:
+                                assign(default(T));
+                                return;
+
+                            // original isn't passed to this function unless the control property is unchanged
+                            case SpecialValue.Original:
+                                return;
+                        }
+                }
             }
 
-            ResolveColour(c => target.ForeColor = c, () => target.Parent?.ForeColor ?? Color.Khaki, GetValue(ControlPropertyCode.Foreground));
-            ResolveColour(c => target.BackColor = c, () => target.Parent?.BackColor ?? Color.FromArgb(64, 64, 64), GetValue(ControlPropertyCode.Background));
+            ResolveColour(c => target.ForeColor = c, () => target.ForeColor, () => target.Parent?.ForeColor ?? Color.Khaki, GetValue(ControlPropertyCode.Foreground));
+            ResolveColour(c => target.BackColor = c, () => target.BackColor, () => target.Parent?.BackColor ?? Color.FromArgb(64, 64, 64), GetValue(ControlPropertyCode.Background));
+            Resolve(c => target.BackgroundImage = c, () => target.BackgroundImage, () => null, GetValue(ControlPropertyCode.BackgroundImage));
+            Resolve(c => target.Cursor = c, () => target.Cursor, () => Cursors.Arrow, GetValue(ControlPropertyCode.Cursor));
+            Resolve(c => target.Visible = c, () => target.Visible, () => true, GetValue(ControlPropertyCode.Visible));
+
+            {
+                if (target is ButtonToggle t)
+                {
+                    ResolveColour(c => t.ToggledBackColour = c, () => t.ToggledBackColour, () => Color.Transparent, GetValue(ControlPropertyCode.ToggledBackground));
+                    ResolveColour(c => t.ToggledForeColour = c, () => t.ToggledForeColour, () => Color.Transparent, GetValue(ControlPropertyCode.ToggledForeground));
+                }
+            }
+            {
+                if (target is TrackBox.Composite b)
+                {
+                    Resolve(c => b.SmallIncrement = c, () => b.SmallIncrement, () => 1, GetValue(ControlPropertyCode.Increment));
+                    Resolve(c => b.BigIncrement = c, () => b.BigIncrement, () => 0, GetValue(ControlPropertyCode.BigIncrement));
+                    Resolve(c => b.HoveredValueColor = c, () => b.HoveredValueColor, () => Color.Transparent, GetValue(ControlPropertyCode.HoverColour));
+                    Resolve(c => b.LowValueColor = c, () => b.LowValueColor, () => Color.FromArgb(50, b.ForeColor), GetValue(ControlPropertyCode.LowValueColour));
+                    Resolve(c => b.HighValueColor = c, () => b.HighValueColor, () => Color.FromArgb(100, b.ForeColor), GetValue(ControlPropertyCode.HighValueColour));
+                    Resolve(c => b.AlternateTextColor = c, () => b.AlternateTextColor, () =>
+                    {
+                        var alt = b.HighValueColor;
+                        switch (alt.A)
+                        {
+                            case 255:
+                                break;
+                            case 0:
+                                alt = b.BackColor;
+                                break;
+                            default:
+                                alt = FormsUtil.Mix(Color.FromArgb(255, alt), b.BackColor, alt.A / 255.0);
+                                break;
+                        }
+                        var x = (alt.R + alt.G + alt.B) / 3;
+
+                        if (x < 128)
+                        {
+                            x += 100;
+                            return Color.FromArgb(255,
+                                (alt.R / 2 + alt.G + alt.B) / 30 + x,
+                                (alt.G / 2 + alt.R + alt.B) / 30 + x,
+                                (alt.B / 2 + alt.R + alt.G) / 30 + x
+                                );
+                        }
+
+                        x -= 100;
+                        return Color.FromArgb(255,
+                            x - (alt.R * 2 + alt.G + alt.B) / 40,
+                            x - (alt.G * 2 + alt.R + alt.B) / 40,
+                            x - (alt.B * 2 + alt.R + alt.B) / 40
+                            );
+                    }, GetValue(ControlPropertyCode.AlternateForeColour));
+                }
+            }
+
+            {
+                if (target is ColourManager m)
+                {
+                    Resolve(c => m.DisplayAlpha = c, () => m.DisplayAlpha, () => context == ControlSelectorCode.ShieldOfFaithPanel ?
+                    true : m.DisplayAlpha, GetValue(ControlPropertyCode.ShowAlpha));
+                    Resolve(c => m.DisplayRGB = c, () => m.DisplayRGB, () => context != ControlSelectorCode.ShieldOfFaithPanel, GetValue(ControlPropertyCode.ShowRGB));
+                    Resolve(c => m.DisplayColourPick= c, () => m.DisplayColourPick, () => context != ControlSelectorCode.ShieldOfFaithPanel, GetValue(ControlPropertyCode.ShowSelector));
+                    Resolve(c => m.DisplayPreviousPick = c, () => m.DisplayPreviousPick, () => context != ControlSelectorCode.ShieldOfFaithPanel, GetValue(ControlPropertyCode.ShowBackButton));
+                }
+            }
+            
+            {
+                object ffam = null, fem = null, fst = null;
+                Font template = null;
+                foreach (var font in Get(ControlPropertyCode.Font, ControlPropertyCode.FontStyle, ControlPropertyCode.FontSize, ControlPropertyCode.FontFamily))
+                {
+                    if (ffam == null && font.TryGetValue(ControlPropertyCode.FontFamily, out var v))
+                        ffam = v;
+                    if (fem == null && font.TryGetValue(ControlPropertyCode.FontSize, out v))
+                        fem = v;
+                    if (fst == null && font.TryGetValue(ControlPropertyCode.FontStyle, out v))
+                        fst = v;
+                    if (font.TryGetValue(ControlPropertyCode.Font, out v))
+                    {
+                        recorder();
+                        if (v is Font f)
+                            target.Font = f;
+                        else
+                            switch (v as SpecialValue?)
+                            {
+                                case SpecialValue.Inherit:
+                                    if (target.Parent != null)
+                                        target.Font = target.Parent.Font;
+                                    break;
+                            }
+                        template = target.Font;
+                        break;
+                    }
+                }
+                {
+                    if (ffam is object || fem is object || fst is object)
+                    {
+                        recorder();
+                        if (template == null) template = (Font)original_property_control[target][ControlPropertyCode.Font];
+                        var inh = target.Parent == null ? template : target.Parent.Font;
+
+                        FontFamily set_ffam;
+
+                        switch (ffam as SpecialValue?)
+                        {
+                            case SpecialValue.Inherit:
+                                set_ffam = inh.FontFamily;
+                                break;
+                            default:
+                                set_ffam = ffam is string ?
+                                    new FontFamily((string)ffam) :
+                                    ffam is FontFamily ? (FontFamily)ffam : template.FontFamily;
+                                break;
+                        }
+
+                        float set_fem;
+
+                        switch (fem as SpecialValue?)
+                        {
+                            case SpecialValue.Inherit:
+                                set_fem = inh.SizeInPoints;
+                                break;
+                            default:
+                                set_fem = fem as float? ?? template.SizeInPoints;
+                                break;
+                        }
+
+                        FontStyle set_fst;
+
+                        switch (fst as SpecialValue?)
+                        {
+                            case SpecialValue.Inherit:
+                                set_fst = inh.Style;
+                                break;
+                            default:
+                                set_fst = fst as FontStyle? ?? template.Style;
+                                break;
+                        }
+                        
+                        target.Font = new Font(set_ffam, set_fem, set_fst, GraphicsUnit.Point, template.GdiCharSet, template.GdiVerticalFont);
+                    }
+                }
+            }
+
+            {
+                object w = null, h = null;
+                foreach (var size in Get(ControlPropertyCode.AutoSize, ControlPropertyCode.Width, ControlPropertyCode.Height))
+                {
+                    if (w != null)
+                    {
+                        if (size.TryGetValue(ControlPropertyCode.Height, out var v))
+                        {
+                            h = v;
+                            break;
+                        }
+                    }
+                    else if (h != null)
+                    {
+                        if (size.TryGetValue(ControlPropertyCode.Width, out var v))
+                        {
+                            w = v;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (size.TryGetValue(ControlPropertyCode.Width, out var v))
+                        {
+                            w = v;
+                            if (size.TryGetValue(ControlPropertyCode.Height, out v))
+                            {
+                                h = v;
+                                break;
+                            }
+                        }
+                        else if (size.TryGetValue(ControlPropertyCode.Height, out v))
+                            h = v;
+                        else if (size.TryGetValue(ControlPropertyCode.AutoSize, out v))
+                        {
+                            recorder();
+                            { if (v is bool b) target.AutoSize = b; }
+                            break;
+                        }
+                    }
+                }
+                if (w is int|| h is int)
+                {
+                    recorder();
+                    { if (w is int a) target.Width = a; }
+                    { if (h is int a) target.Height = a; }
+                }
+            }
+
 
 
             {
@@ -224,17 +650,19 @@ namespace Sol.ShieldOfFaith
     }
     public enum ControlPropertyCode
     {
+        NoProperty,
+
         Foreground,
         Background,
         BackgroundImage,
 
         FontFamily,
         FontSize,
-        FontWeight,
+        FontStyle,
         Font,
 
         ToggledBackground,
-        ToggleForeground,
+        ToggledForeground,
 
         Scale,
         Height,
@@ -248,6 +676,13 @@ namespace Sol.ShieldOfFaith
         ShowAlpha,
         ShowSelector,
         ShowBackButton,
+
+        Increment,
+        BigIncrement,
+        HoverColour,
+        LowValueColour,
+        HighValueColour,
+        AlternateForeColour,
 
         SubcontrolIterator
     }
@@ -284,7 +719,7 @@ namespace Sol.ShieldOfFaith
         Other = 0x7 | Tier0,
 
         // tier 1.5 can not use the 1x80 bit because it could push to Tierless in tier 4
-         
+
         GroupBox = 0x10 | Container, ExtendedGroupBox = 0xff | (GroupBox << 8),
         Panel = 0x20 | Container, ExtendedPanel = 0xff | (Panel << 8),
 
@@ -326,7 +761,10 @@ namespace Sol.ShieldOfFaith
         Form = 0x01 | (ComplexControl << 8), ExtendedForm = 0xff | (Form << 8),
         ShieldOfFaithButton = 0x1 | (ButtonToggle << 8),
         ShaderGlassButton = 0x2 | (ButtonToggle << 8),
-        ExtendedButtonToggle = 0xff | (ButtonToggle << 8)
+        ExtendedButtonToggle = 0xff | (ButtonToggle << 8),
+
+        ShieldOfFaithPanel = 0x1 | (ExtendedPanel << 8),
+        ShaderGlassPanel = 0x2 | (ExtendedPanel << 8)
     }
 
 }

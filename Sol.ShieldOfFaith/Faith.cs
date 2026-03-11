@@ -83,12 +83,15 @@ namespace Sol.ShieldOfFaith
             }
         }
 
-        void ClearIPC()
+        public void ClearIPC(bool update_ui = true)
         {
-            buttonRefresh.Enabled = false;
-            buttonRefresh.ToggledOn = false;
+            if (update_ui)
+            {
+                buttonRefresh.Enabled = false;
+                buttonRefresh.ToggledOn = false;
 
-            protectorGlass.ResumeLayout();
+                protectorGlass.ResumeLayout();
+            }
 
             var ipc = this.ipc;
             var shaderglass = this.shaderglass;
@@ -97,7 +100,8 @@ namespace Sol.ShieldOfFaith
             this.ipc = null;
             this.shaderglass = null;
 
-            configWin.RecordEvent("Clearing out IPC process", true);
+            if (update_ui) configWin.RecordEvent("Clearing out IPC process", true);
+
             if (ipc != null)
             {
                 ipc.Dispose();
@@ -622,6 +626,7 @@ namespace Sol.ShieldOfFaith
                 }
         }
 
+        /*
         private void toggle_reevaluate(object sender, EventArgsColourSelect select)
         {
             if (((ButtonToggle)sender).ToggledOn)
@@ -629,7 +634,7 @@ namespace Sol.ShieldOfFaith
                 var c = select.SelectBackground;
                 select.SelectBackground = Color.FromArgb(c.R / 2, c.G / 2, c.B / 2);
             }
-        }
+        }*/
 
         public void AttachHelperText(Control c, string text, bool apply_to_childs = false)
         {
