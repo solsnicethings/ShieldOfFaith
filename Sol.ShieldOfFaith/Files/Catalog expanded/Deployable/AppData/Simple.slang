@@ -16,15 +16,9 @@ layout(push_constant) uniform Push
 
     // your custom parameters
 	float Intensity;
-    float RedFactor;
-	float GreenFactor;
-	float BlueFactor;
 } params;
 
 #pragma parameter Intensity "Intensity" 0.3 0.0 0.9 0.005
-#pragma parameter RedFactor "RedFactor" 0.0 0.0 1.0 0.005
-#pragma parameter GreenFactor "GreenFactor" 0.0 0.0 1.0 0.005
-#pragma parameter BlueFactor "BlueFactor" 0.0 0.0 1.0 0.005
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {

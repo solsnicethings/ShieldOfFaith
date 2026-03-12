@@ -26,16 +26,7 @@ namespace Sol.ShieldOfFaith
         Process shaderglass;
         string executable
         {
-            get
-            {
-                var p = Program.Settings.ShaderGlassPath;
-                if (string.IsNullOrWhiteSpace(p))
-                    return null;
-
-                // can only be relative to program folder (presumed higher security than user folders),
-                // otherwise low-security folders can be used to unexpectedly swap in executable
-                return Path.GetFullPath(Path.Combine(Program.GetExecutableContainingFolder(), p));
-            }
+            get => Program.ShaderGlassExecutable;
             set
             {
                 Program.Settings.ShaderGlassPath = value;

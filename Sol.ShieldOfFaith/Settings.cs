@@ -204,6 +204,19 @@ namespace Sol.ShieldOfFaith
                             yield return new Tuple<string, bool>(optional, false);
             }
         }
+        public IEnumerable<Tuple<string, bool, string>> IncludedSettingsRequiredIfTrueWithFullPath
+        {
+            get
+            {
+                using (var e = IncludedSettingsRequiredIfTrue.GetEnumerator())
+                    if (e.MoveNext())
+                    {
+                        var path = Path.GetDirectoryName(this.path);
+                        do yield return new Tuple<string, bool, string>(e.Current.Item1, e.Current.Item2,
+                            Path.GetFullPath(Path.Combine(path, e.Current.Item1))); while (e.MoveNext());
+                    }
+            }
+        }
 
         /// <summary>
         /// Changes to this setting take effect when you save and then load

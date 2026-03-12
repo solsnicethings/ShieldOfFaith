@@ -32,6 +32,12 @@
             this.outputSessionDetails = new System.Windows.Forms.RichTextBox();
             this.Tabs = new System.Windows.Forms.TabControl();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.configFileSystem = new System.Windows.Forms.ListView();
+            this.chCfgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.chCfgFunction = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.chCfgPath = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.panel3 = new System.Windows.Forms.Panel();
             this.tabSession = new System.Windows.Forms.TabPage();
             this.panel1 = new System.Windows.Forms.Panel();
             this.buttonClearTrace = new System.Windows.Forms.Button();
@@ -42,13 +48,6 @@
             this.tabHelp = new System.Windows.Forms.TabPage();
             this.helpTextBox = new System.Windows.Forms.RichTextBox();
             this.tabHelpSelector = new System.Windows.Forms.TabControl();
-            this.configFileSystem = new System.Windows.Forms.ListView();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.panel3 = new System.Windows.Forms.Panel();
-            this.chCfgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.chCfgFunction = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.chCfgExists = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.chCfgPath = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Tabs.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tabSession.SuspendLayout();
@@ -95,6 +94,56 @@
             this.tabPage2.Size = new System.Drawing.Size(646, 431);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Configuration files";
+            // 
+            // configFileSystem
+            // 
+            this.configFileSystem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(120)))), ((int)(((byte)(115)))));
+            this.configFileSystem.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.chCfgName,
+            this.chCfgFunction,
+            this.chCfgPath});
+            this.configFileSystem.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.configFileSystem.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.configFileSystem.ForeColor = System.Drawing.Color.Black;
+            this.configFileSystem.FullRowSelect = true;
+            this.configFileSystem.HideSelection = false;
+            this.configFileSystem.Location = new System.Drawing.Point(4, 3);
+            this.configFileSystem.Name = "configFileSystem";
+            this.configFileSystem.Size = new System.Drawing.Size(508, 359);
+            this.configFileSystem.TabIndex = 0;
+            this.configFileSystem.UseCompatibleStateImageBehavior = false;
+            this.configFileSystem.View = System.Windows.Forms.View.Details;
+            // 
+            // chCfgName
+            // 
+            this.chCfgName.Text = "Name";
+            this.chCfgName.Width = 95;
+            // 
+            // chCfgFunction
+            // 
+            this.chCfgFunction.Text = "Function";
+            this.chCfgFunction.Width = 173;
+            // 
+            // chCfgPath
+            // 
+            this.chCfgPath.Text = "Path";
+            this.chCfgPath.Width = 235;
+            // 
+            // panel2
+            // 
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panel2.Location = new System.Drawing.Point(512, 3);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(130, 359);
+            this.panel2.TabIndex = 1;
+            // 
+            // panel3
+            // 
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel3.Location = new System.Drawing.Point(4, 362);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(638, 66);
+            this.panel3.TabIndex = 2;
             // 
             // tabSession
             // 
@@ -222,62 +271,6 @@
             this.tabHelpSelector.TabIndex = 3;
             this.tabHelpSelector.SelectedIndexChanged += new System.EventHandler(this.tabHelpSelector_SelectedIndexChanged);
             // 
-            // configFileSystem
-            // 
-            this.configFileSystem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(120)))), ((int)(((byte)(115)))));
-            this.configFileSystem.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.chCfgName,
-            this.chCfgFunction,
-            this.chCfgExists,
-            this.chCfgPath});
-            this.configFileSystem.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.configFileSystem.Font = new System.Drawing.Font("Consolas", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.configFileSystem.ForeColor = System.Drawing.Color.Black;
-            this.configFileSystem.FullRowSelect = true;
-            this.configFileSystem.HideSelection = false;
-            this.configFileSystem.Location = new System.Drawing.Point(4, 3);
-            this.configFileSystem.Name = "configFileSystem";
-            this.configFileSystem.Size = new System.Drawing.Size(508, 359);
-            this.configFileSystem.TabIndex = 0;
-            this.configFileSystem.UseCompatibleStateImageBehavior = false;
-            this.configFileSystem.View = System.Windows.Forms.View.Details;
-            // 
-            // panel2
-            // 
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel2.Location = new System.Drawing.Point(512, 3);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(130, 359);
-            this.panel2.TabIndex = 1;
-            // 
-            // panel3
-            // 
-            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel3.Location = new System.Drawing.Point(4, 362);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(638, 66);
-            this.panel3.TabIndex = 2;
-            // 
-            // chCfgName
-            // 
-            this.chCfgName.Text = "Name";
-            this.chCfgName.Width = 95;
-            // 
-            // chCfgFunction
-            // 
-            this.chCfgFunction.Text = "Function";
-            this.chCfgFunction.Width = 120;
-            // 
-            // chCfgExists
-            // 
-            this.chCfgExists.Text = "Exists";
-            this.chCfgExists.Width = 83;
-            // 
-            // chCfgPath
-            // 
-            this.chCfgPath.Text = "Path";
-            this.chCfgPath.Width = 205;
-            // 
             // Composure
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
@@ -320,7 +313,6 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.ColumnHeader chCfgName;
         private System.Windows.Forms.ColumnHeader chCfgFunction;
-        private System.Windows.Forms.ColumnHeader chCfgExists;
         private System.Windows.Forms.ColumnHeader chCfgPath;
         private System.Windows.Forms.Panel panel3;
     }

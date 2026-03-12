@@ -14,7 +14,7 @@ https://github.com/solsnicethings/ShieldOfFaith
 
 -- Shader Glass --
 
-For a very capable user, ShaderGlass might be sufficient in and of itself, but it is a gaming-oriented project, not an accessibility oriented one.
+For a very capable user, ShaderGlass might be sufficient in and of itself, but it is a style/retro/gaming-oriented project, not an accessibility oriented one.
 
 The user interface of ShaderGlass is not designed with the same use case in mind as Shield of Faith is.
 

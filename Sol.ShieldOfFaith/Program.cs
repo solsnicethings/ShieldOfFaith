@@ -12,9 +12,27 @@ namespace Sol.ShieldOfFaith
 {
     public static class Program
     {
-        const string DefaultAppDataSubfolder = @"Sol\Shield Of Faith";
-        
-      static public string DefaultAppDataLocation
+        static public string ShaderGlassExecutable
+        {
+            get
+            {
+                var p = Program.Settings.ShaderGlassPath;
+                if (string.IsNullOrWhiteSpace(p))
+                    return null;
+                // can only be relative to program folder (presumed higher security than user folders),
+                // otherwise low-security folders can be used to unexpectedly swap in executable
+                return Path.GetFullPath(Path.Combine(GetExecutableContainingFolder(), p));
+            }
+        }
+
+        const string DefaultAppDataSubfolder =
+#if DEBUG
+            @"Sol\Shield Of Faith\DEBUG-BUILD";
+#else
+            @"Sol\Shield Of Faith";
+#endif
+
+        static public string DefaultAppDataLocation
         {
             get
             {
@@ -236,13 +254,13 @@ namespace Sol.ShieldOfFaith
                         Problem.Add("Unexpected or incomplete parameter " + key);
                 }
 
-                if (defaultcfglocation)
+                if (AppDataLocation == null)
+                {
                     AppDataLocation = Environment.GetEnvironmentVariable("appdata");
 
-                if (AppDataLocation == null)
-                    Problem.Add("Unable to resolve environment variable %appdata%");
-                else if (defaultcfglocation)
-                {
+                    if (AppDataLocation == null)
+                        Problem.Add("Unable to resolve environment variable %appdata%");
+                    
                     AppDataLocation = Path.Combine(AppDataLocation, DefaultAppDataSubfolder);
                     try
                     {
@@ -253,8 +271,11 @@ namespace Sol.ShieldOfFaith
                         Problem.Add("Unable to access/create subfolder " + AppDataLocation);
                         AppDataLocation = null;
                     }
+                }
 
-                    if (deploy && AppDataLocation != null )
+                if (defaultcfglocation)
+                {
+                    if (deploy && AppDataLocation != null)
                     {
                         var l = Path.GetFullPath(AppDataLocation);
                         if (!l.EndsWith(Path.DirectorySeparatorChar.ToString())) l += Path.DirectorySeparatorChar;
@@ -263,14 +284,14 @@ namespace Sol.ShieldOfFaith
                         {
                             var name = file.Item1.Replace('/', '\\');
                             name = Path.GetFullPath(Path.Combine(l, name));
-                            
+
                             if (File.Exists(name)) continue;
 
                             if (!name.StartsWith(l, StringComparison.OrdinalIgnoreCase))
                             {
                                 Problem.Add("Path " + name + " not match for container " + l);
                                 continue;
-                            }                            
+                            }
 
                             try
                             {

@@ -23,8 +23,19 @@ namespace Sol.ShieldOfFaith
             File = 0x1,
             Directory = 0x2,
             Default = 0x4,
+            Active = 0x8,
 
-            DefaultDataDirectory = 0x10 | Default | Directory
+            Missing = unchecked((int)0x80000000),
+
+            Custom = 0x10,
+            Optional = 0x20,
+            Required = 0x40,
+
+            DataDirectory = 0x100 | Directory,
+            Config = 0x200 | File,
+            Shader = 0x300 | File,
+            ShaderProfile = 0x400 | File,
+            ShaderApp = 0x500 | File
         }
 
         void ResetSessionInfo()
@@ -91,38 +102,111 @@ namespace Sol.ShieldOfFaith
                 tabHelpSelector_SelectedIndexChanged(tabHelpSelector, EventArgs.Empty);
             }
 
-            void addConfigItem(string name, ConfigFunction function, string path)
-            {
-                var s = new string[4];
-                string exists;
+            PopulateFileSystemList();
+        }
 
-                try
+        ListViewItem addConfigItem(string name, ConfigFunction function, string path)
+        {
+            var s = new string[4];
+            string xm = null;
+            try
+            {
+                switch (function & (ConfigFunction.File | ConfigFunction.Directory |  ConfigFunction.Missing))
                 {
-                    switch (function & (ConfigFunction.File | ConfigFunction.Directory))
+                    case ConfigFunction.File:
+                        if (!File.Exists(path)) function |= ConfigFunction.Missing;
+                        break;
+                    case ConfigFunction.Directory:
+                        if (!Directory.Exists(path)) function |= ConfigFunction.Missing;
+                        break;
+                }
+            }
+            catch (IOException ex)
+            {
+                xm = ex.Message;
+            }
+            s[chCfgFunction.Index] = xm ?? function.ToString();
+            s[chCfgName.Index] = name ?? string.Empty;
+            s[chCfgPath.Index] = path ?? string.Empty;
+
+            ListViewItem i;
+            configFileSystem.Items.Add(i = new ListViewItem(s));
+            return i;
+        }
+
+        void PopulateFileSystemList()
+        {
+            var added = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
+            var l = Program.AppDataLocation;
+            {
+                var d = Program.DefaultAppDataLocation;
+
+                if (!string.Equals(d, l, StringComparison.OrdinalIgnoreCase))
+                    added.Add(d, addConfigItem("%AppData%\\..", ConfigFunction.DataDirectory | ConfigFunction.Default, d));
+
+                addConfigItem(Path.GetFileName(l), added.Count == 0 ? ConfigFunction.DataDirectory : ConfigFunction.DataDirectory | ConfigFunction.Active, l);
+
+                d = Program.Settings.LocationOnDisk;
+                if (!string.IsNullOrEmpty(d))
+                {
+                    added[d] = addConfigItem(Path.GetFileName(d), ConfigFunction.Config | ConfigFunction.Active, d);
+
+                    foreach (var s in Program.Settings.IncludedSettingsRequiredIfTrueWithFullPath)
                     {
-                        case ConfigFunction.File:
-                            exists = File.Exists(path) ? "yes" : "no";
-                            break;
-                        case ConfigFunction.Directory:
-                            exists = Directory.Exists(path) ? "yes" : "no";
-                            break;
-                        default:
-                            exists = string.Empty;
-                            break;
+                        if (added.ContainsKey(s.Item3)) continue;
+                        added.Add(s.Item3, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
+                            ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3));
                     }
                 }
-                catch (IOException ex)
+
+                d = Program.ShaderGlassExecutable;
+                if (d != null)
+                    added[d] = addConfigItem("ShaderGlass.exe", ConfigFunction.ShaderApp, d);
+
+                d = Program.Settings.ShaderGlassProfile;
+                if (!string.IsNullOrEmpty(d))
                 {
-                    exists = ex.Message;
+                    var f = Program.FindPathTo(d);
+                    if (f == null)
+                        addConfigItem(Path.GetFileName(d), ConfigFunction.ShaderProfile | ConfigFunction.Active | ConfigFunction.Missing, d);
+                    else
+                        added[f] = addConfigItem(d, ConfigFunction.ShaderProfile | ConfigFunction.Active, f);
                 }
-                s[chCfgFunction.Index] = function.ToString();
-                s[chCfgName.Index] = name ?? string.Empty;
-                s[chCfgPath.Index] = path ?? string.Empty;
-                s[chCfgExists.Index] = exists;
-                configFileSystem.Items.Add(new ListViewItem(s));
+
+                d = Program.Settings.ShaderGlassCustomShader;
+                if (!string.IsNullOrEmpty(d))
+                {
+                    var f = Program.FindPathTo(d);
+                    if (f == null)
+                        addConfigItem(Path.GetFileName(d), ConfigFunction.Shader | ConfigFunction.Active | ConfigFunction.Missing, d);
+                    else
+                        added[f] = addConfigItem(d, ConfigFunction.Shader | ConfigFunction.Active, f);
+                }
             }
 
-            addConfigItem("%AppData%\\..", ConfigFunction.DefaultDataDirectory, Program.DefaultAppDataLocation);
+            foreach (var e in Directory.GetFiles(l))
+            {
+                if (added.ContainsKey(e)) continue;
+                try { if (0 != (File.GetAttributes(e) & (FileAttributes.Hidden | FileAttributes.System))) continue; }
+                catch (IOException) { continue; }
+
+                var fnc = ConfigFunction.File;
+
+                switch (Path.GetExtension(e).ToLowerInvariant())
+                {
+                    case ".cfg":
+                        fnc |= ConfigFunction.Config;
+                        break;
+                    case ".slang":
+                        fnc |= ConfigFunction.Shader;
+                        break;
+                    case ".sgp":
+                        fnc |= ConfigFunction.ShaderProfile;
+                        break;
+                }
+
+                added.Add(e, addConfigItem(Path.GetFileName(e), fnc, e));
+            }
         }
 
         protected override void OnVisibleChanged(EventArgs e)
