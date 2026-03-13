@@ -541,7 +541,7 @@ namespace Sol.ShieldOfFaith
                 if (visibility) target.BringToFront();
             }
 
-            update(buttonCreate, require(ConfigFunction.Missing));
+            update(buttonCreate, false && require(ConfigFunction.Missing));
             update(buttonActivate, forbid(ConfigFunction.Active | ConfigFunction.Missing)
                 && filetypes(ConfigFunction.ShaderProfile | ConfigFunction.Shader));
             update(buttonOpen, forbid(ConfigFunction.Missing) && allow(ConfigFunction.Directory | ConfigFunction.File) &&

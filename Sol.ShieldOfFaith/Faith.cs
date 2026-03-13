@@ -379,6 +379,7 @@ namespace Sol.ShieldOfFaith
 
                 foreach (var c in param_inputs.Values) c.Dispose();
                 param_inputs.Clear();
+                confirm_redefine.Reverse();
                 foreach (var p in confirm_redefine)
                 {
                     var c = new TrackBox.Composite();
