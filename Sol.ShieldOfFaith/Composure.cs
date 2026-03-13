@@ -39,7 +39,7 @@ namespace Sol.ShieldOfFaith
             ShaderProfile = 0x800 | File,
             ShaderApp = 0x1000 | File,
 
-            DirectoryContents = 02000
+            DirectoryContents = 0x2000
         }
 
         void ResetSessionInfo()
