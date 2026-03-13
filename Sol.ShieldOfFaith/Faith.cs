@@ -26,19 +26,12 @@ namespace Sol.ShieldOfFaith
         Process shaderglass;
         string executable
         {
-            get
-            {
-                var p = Program.Settings.ShaderGlassPath;
-                if (string.IsNullOrWhiteSpace(p))
-                    return null;
-
-                // can only be relative to program folder (presumed higher security than user folders),
-                // otherwise low-security folders can be used to unexpectedly swap in executable
-                return Path.GetFullPath(Path.Combine(Program.GetExecutableContainingFolder(), p));
-            }
+            get => Program.ShaderGlassExecutable;
             set
             {
                 Program.Settings.ShaderGlassPath = value;
+                configWin?.PopulateFileSystemList();
+
                 var path = executable;
 
                 { if (toggleButtonGlass.Tag is string s) toggleButtonGlass.Text = s; }
@@ -83,12 +76,21 @@ namespace Sol.ShieldOfFaith
             }
         }
 
-        void ClearIPC()
+        public void ClearIPC(bool update_ui = true)
         {
-            buttonRefresh.Enabled = false;
-            buttonRefresh.ToggledOn = false;
+            if (update_ui)
+            {
+                buttonRefresh.Enabled = false;
+                buttonRefresh.ToggledOn = false;
 
-            protectorGlass.ResumeLayout();
+                var x = new Control[protectorGlass.Controls.Count];
+                protectorGlass.Controls.CopyTo(x, 0);
+                foreach (var c in x)
+                    if (c != flowLayoutGlass && c != protectorGlass.Header)
+                        c.Dispose();
+
+                protectorGlass.ResumeLayout();
+            }
 
             var ipc = this.ipc;
             var shaderglass = this.shaderglass;
@@ -97,7 +99,8 @@ namespace Sol.ShieldOfFaith
             this.ipc = null;
             this.shaderglass = null;
 
-            configWin.RecordEvent("Clearing out IPC process", true);
+            if (update_ui) configWin.RecordEvent("Clearing out IPC process", true);
+
             if (ipc != null)
             {
                 ipc.Dispose();
@@ -106,14 +109,12 @@ namespace Sol.ShieldOfFaith
             {
                 try
                 {
-                    if (!shaderglass.WaitForExit(500))
-                    {
-                        shaderglass.CloseMainWindow();
-                        if (!shaderglass.WaitForExit(2000))
-                            shaderglass.Kill();
-                    }
+                    if (!shaderglass.WaitForExit(shaderglass.CloseMainWindow() ? 2000 : 500))
+                        shaderglass.Kill();
                 }
+                catch (Win32Exception) { }
                 catch (InvalidOperationException) { }
+                shaderglass.EmergencyCloseDisable();
                 shaderglass.Dispose();
             }
         }
@@ -161,7 +162,7 @@ namespace Sol.ShieldOfFaith
                 shader_profile = string.IsNullOrEmpty(profile) ? null : profile;
 
                 shaderglass.StartInfo = new ProcessStartInfo(executable,
-                    (toggleGlassWindow.ToggledOn ? "-ipc": "-f -ipc") + profile);
+                    (toggleGlassWindow.ToggledOn ? "-ipc" : "-f -ipc") + profile);
 
                 if (shader_profile != null)
                     shader_profile = shader_profile.Replace("\"", string.Empty).Trim();
@@ -170,7 +171,7 @@ namespace Sol.ShieldOfFaith
                     configWin.RecordEvent("with arguments = " + shaderglass.StartInfo.Arguments);
                 shaderglass.EnableRaisingEvents = true;
                 shaderglass.Exited += Shaderglass_Exited;
-                shaderglass.Start();
+                if (shaderglass.Start()) shaderglass.EmergencyCloseEnable();
             }
             catch (Win32Exception)
             {
@@ -183,7 +184,7 @@ namespace Sol.ShieldOfFaith
                 }
                 return;
             }
-            catch { this.executable = null;ClearIPC(); configWin.RecordEvent("Launch failed", true); throw; }
+            catch { this.executable = null; ClearIPC(); configWin.RecordEvent("Launch failed", true); throw; }
 
             if (this.executable != executable) this.executable = executable;
 
@@ -378,6 +379,7 @@ namespace Sol.ShieldOfFaith
 
                 foreach (var c in param_inputs.Values) c.Dispose();
                 param_inputs.Clear();
+                confirm_redefine.Reverse();
                 foreach (var p in confirm_redefine)
                 {
                     var c = new TrackBox.Composite();
@@ -450,6 +452,7 @@ namespace Sol.ShieldOfFaith
             AttachHelperText(containerIntensityLimit, "An intensity limit around 200 ensures that you don't accidentally make the screen fully dark.");
             AttachHelperText(colourManagerShield.BarAlpha, "Increase value to make the shield colour apply more strongly. Values above 200 are hard to see through.", true);
             AttachHelperText(labelTitle, labelTooltip.Text = "Complete programs and source code made available under GNU GPL 3.0 license");
+            AttachHelperText(buttonEmergencyClose, "Tries to close all Shield of Faith processes and associated Shader glass processes.");
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -460,10 +463,24 @@ namespace Sol.ShieldOfFaith
         void ShowOptions()
         {
             if (configWin == null)
+            {
                 configWin = new Composure();
-            configWin.FormClosing += ConfigWin_FormClosing;
+                configWin.FormClosing += ConfigWin_FormClosing;
+                configWin.ShaderChanged += ConfigWin_ShaderChanged;
+                configWin.ShaderProfileChanged += ConfigWin_ShaderProfileChanged;
+            }
             configWin.Visible = true;
             configWin.Activate();
+        }
+
+        private void ConfigWin_ShaderProfileChanged(object sender, EventArgs e)
+        {
+            ipc?.LoadProfile(Program.Settings.FindRelative(Program.Settings.ShaderGlassProfile));
+        }
+
+        private void ConfigWin_ShaderChanged(object sender, EventArgs e)
+        {
+            ipc?.LoadShader(Program.Settings.FindRelative(Program.Settings.ShaderGlassCustomShader));
         }
 
         private void ConfigWin_FormClosing(object sender, FormClosingEventArgs e)
@@ -502,7 +519,7 @@ namespace Sol.ShieldOfFaith
                 shieldWin = new Shield();
                 shieldWin.Intensity = Program.Settings.ShieldIntensity;
             }
-            shieldWin.Visible = true;
+            shieldWin.Visible = true;            
         }
 
 
@@ -518,12 +535,28 @@ namespace Sol.ShieldOfFaith
             return true;
         }
 
+        readonly ControlStyler styler = new ControlStyler();
+
         private void Faith_Load(object sender, EventArgs e)
         {
-            if (!Program.Settings.StartupWindow.Contains(Settings.StartupWindows.Main))
+            using (var p = Process.GetCurrentProcess())
+                if (!p.EmergencyCloseEnable())
+                    if (MessageBox.Show("Unable to initiate safety option \"Terminate all\" by creating files in hidden application data folder." +
+                        " This is unexpected for normal Windows setups. (The feature is usually not needed, but can be nice if a process freezes.)" +
+                        "\r\n\r\nRun without access to emergency close feature?",
+                        "Initialisation problem", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    {
+                        Close();
+                        return;
+                    }
+                    else buttonEmergencyClose.Dispose();
+
+
+            if (!(Program.MainWindowStartup || Program.Settings.StartupWindow.Contains(Settings.StartupWindows.Main)))
                 WindowState = FormWindowState.Minimized;
 
             FormBorderStyle = Program.Settings.MainWindowBorderStyle;
+            MinimumSize = new Size(Size.Width / 2, (2 * Size.Height) / 3);
             { var l = Program.Settings.MainWindowLocation; if (l.HasValue) Location = l.Value; }
             { var s = Program.Settings.MainWindowSize; if (s.HasValue) Size = s.Value; }
 
@@ -533,6 +566,44 @@ namespace Sol.ShieldOfFaith
             BorderlessResizer.WindowResizer.ApplyWindowResizer(this);
 
             colourManagerShield.Value = Program.Settings.ShieldColorAndIntensity;
+
+            /*{
+                styler.ControlTypeResolver = (c, ode) =>
+                {
+                    if (c == protectorShield)
+                        return ControlSelectorCode.ShieldOfFaithPanel;
+                    if (c == protectorGlass)
+                        return ControlSelectorCode.ShaderGlassPanel;
+                    if (c == toggleButtonShield)
+                        return ControlSelectorCode.ShieldOfFaithButton;
+                    if (c == toggleButtonGlass)
+                        return ControlSelectorCode.ShaderGlassButton;
+                    return ControlSelectorCode.ResolveAutomatically;
+                };
+
+                IEnumerable<Control> shieldren(Control c)
+                {
+                    foreach (Control child in c.Controls)
+                    {
+                        if (child == flowLayoutGlass || child == flowLayoutShield)
+                        {
+                            foreach (Control wild in child.Controls)
+                                yield return wild;
+                        }
+                        else yield return child;
+                    }
+                }
+
+                styler.SetControlChildIterator(ControlSelectorCode.ShieldOfFaithPanel, shieldren);
+                styler.SetControlChildIterator(ControlSelectorCode.ShaderGlassPanel, shieldren);
+
+                var s = Program.Settings.ControlStyleScript;
+                if (s != null)
+                {
+                    styler.Parse(s);
+                    styler.ApplyTo(this);
+                }
+            }*/
         }
 
         Size lastsize; Point lastplace;
@@ -607,21 +678,23 @@ namespace Sol.ShieldOfFaith
         {
             openFileDialog1.InitialDirectory = Path.GetDirectoryName(Program.GetExecutedFilePath());
 
-            foreach (var win in Program.Settings.StartupWindow)
-                switch (win)
-                {
-                    case Settings.StartupWindows.Options:
-                        ShowOptions();
-                        break;
-                    case Settings.StartupWindows.Shield:
-                        toggleButtonShield.ToggledOn = true;
-                        break;
-                    case Settings.StartupWindows.Glass:
-                        toggleButtonGlass.ToggledOn = true;
-                        break;
-                }
+            if (!Program.MainWindowStartup)
+                foreach (var win in Program.Settings.StartupWindow)
+                    switch (win)
+                    {
+                        case Settings.StartupWindows.Options:
+                            ShowOptions();
+                            break;
+                        case Settings.StartupWindows.Shield:
+                            toggleButtonShield.ToggledOn = true;
+                            break;
+                        case Settings.StartupWindows.Glass:
+                            toggleButtonGlass.ToggledOn = true;
+                            break;
+                    }
         }
 
+        /*
         private void toggle_reevaluate(object sender, EventArgsColourSelect select)
         {
             if (((ButtonToggle)sender).ToggledOn)
@@ -629,7 +702,7 @@ namespace Sol.ShieldOfFaith
                 var c = select.SelectBackground;
                 select.SelectBackground = Color.FromArgb(c.R / 2, c.G / 2, c.B / 2);
             }
-        }
+        }*/
 
         public void AttachHelperText(Control c, string text, bool apply_to_childs = false)
         {
@@ -712,6 +785,21 @@ namespace Sol.ShieldOfFaith
         {
             if (!glass_action)
                 ipc?.SetFullscreen(!toggleGlassWindow.ToggledOn);
+        }
+
+        private void buttonShieldControls_Toggled(object sender, EventArgs e)
+        {
+            splitContainer1.Panel2Collapsed = buttonShieldControls.ToggledOn;
+        }
+
+        private void buttonGlassControls_Toggled(object sender, EventArgs e)
+        {
+            splitContainer1.Panel1Collapsed = buttonGlassControls.ToggledOn;
+        }
+
+        private void buttonEmergencyClose_Click(object sender, EventArgs e)
+        {
+            Task.Run(Program.EmergencyCloseExecute);
         }
 
         private void buttonRefresh_Toggled(object sender, EventArgs e)

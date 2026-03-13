@@ -299,16 +299,26 @@ namespace Sol.ShieldOfFaith
             Invalidate();
         }
 
+        bool assigned_MinimumSize;
         public override Size MinimumSize
         {
             get
             {
-                var m = base.MinimumSize;
-                return new Size(m.Width < 40 ? 40 : m.Width, m.Height < 20 ? 20 : m.Height);
+                if (assigned_MinimumSize)
+                    return base.MinimumSize;
+                var s = DefaultMinimumSize;
+                return new Size(s.Width < 50 ? 50 : s.Width, s.Height < 20 ? 20 : s.Height);
             }
-            set => base.MinimumSize = value;
+            set { assigned_MinimumSize = true; base.MinimumSize = value; }
         }
-
+        public override Size GetPreferredSize(Size proposedSize)
+        {
+            var s = base.GetPreferredSize(proposedSize);
+            if (s.Width > 256)
+                return new Size(256, s.Height);
+            return s;
+        }
+        
         public class Composite : Panel
         {
             TrackBox trackbox = new TrackBox();
@@ -405,12 +415,18 @@ namespace Sol.ShieldOfFaith
             [Browsable(true)]
             public override string Text { get => trackbox.Text; set => trackbox.Text = value; }
 
-            public override Size MinimumSize { get
+            bool assigned_MinimumSize;
+            public override Size MinimumSize
+            {
+                get
                 {
-                    var m = base.MinimumSize;
-                    return new Size(m.Width < 40 ? 40 : m.Width, m.Height < 20 ? 20 : m.Height);
+                    if (assigned_MinimumSize)
+                        return base.MinimumSize;
+                    var s = DefaultMinimumSize;
+                    return new Size(s.Width < 50 ? 50 : s.Width, s.Height < 20 ? 20 : s.Height);
                 }
-                set => base.MinimumSize = value; }
+                set { assigned_MinimumSize = true; base.MinimumSize = value; }
+            }
 
             public override Size GetPreferredSize(Size proposedSize)
             {

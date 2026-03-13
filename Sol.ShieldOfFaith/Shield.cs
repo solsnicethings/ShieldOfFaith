@@ -28,6 +28,17 @@ namespace Sol.ShieldOfFaith
         }
 
         [DllImport("user32.dll")]
+        static extern bool SetWindowPos(
+        IntPtr hWnd,
+        IntPtr hWndInsertAfter,
+        int X, int Y, int cx, int cy, uint uFlags);
+
+        const uint
+            SWP_NOMOVE = 0x0002,
+            SWP_NOSIZE = 0x0001,
+            SWP_NOACTIVATE = 0x0010;
+
+        [DllImport("user32.dll")]
         static extern IntPtr GetWindowLong(IntPtr hWnd, GWL nIndex);
         [DllImport("user32.dll")]
         static extern IntPtr SetWindowLong(IntPtr hWn, GWL nIndex, IntPtr assign);
@@ -60,6 +71,13 @@ namespace Sol.ShieldOfFaith
                 opacity = value;
                 if (loaded) SetIntensity();
             }
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (Visible)
+                SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
         }
 
         void SetIntensity() => SetLayeredWindowAttributes(Handle, 0, opacity, LWA.Alpha);

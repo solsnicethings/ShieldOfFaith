@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -12,9 +14,29 @@ namespace Sol.ShieldOfFaith
 {
     public static class Program
     {
-        const string DefaultAppDataSubfolder = @"Sol\Shield Of Faith";
-        
-      static public string DefaultAppDataLocation
+        static public bool MainWindowStartup;
+
+        static public string ShaderGlassExecutable
+        {
+            get
+            {
+                var p = Program.Settings.ShaderGlassPath;
+                if (string.IsNullOrWhiteSpace(p))
+                    return null;
+                // can only be relative to program folder (presumed higher security than user folders),
+                // otherwise low-security folders can be used to unexpectedly swap in executable
+                return Path.GetFullPath(Path.Combine(GetExecutableContainingFolder(), p));
+            }
+        }
+
+        const string DefaultAppDataSubfolder =
+#if DEBUG
+            @"Sol\Shield Of Faith\DEBUG-BUILD";
+#else
+            @"Sol\Shield Of Faith";
+#endif
+
+        static public string DefaultAppDataLocation
         {
             get
             {
@@ -25,17 +47,63 @@ namespace Sol.ShieldOfFaith
             }
         }
 
-        static public string FindPathTo(string file)
+        static string EmergencyCloseTracking;
+
+        static public IEnumerable<KeyValuePair<string, FileAttributes>> GetAvailableFilesFromTree(string root)
         {
+            string[] fs;
+            try
+            {
+                fs = Directory.GetFileSystemEntries(root);
+            }
+            catch (UnauthorizedAccessException) { yield break; }
+            catch (IOException) { yield break; }
+
+            foreach (var e in fs)
+                if (TryGetFileAttributes(e, out var attr))
+                    switch (attr & (FileAttributes.Directory | FileAttributes.Hidden | FileAttributes.System))
+                    {
+                        case FileAttributes.Directory:
+                            foreach (var c in GetAvailableFilesFromTree(e))
+                                yield return c;
+                            break;
+                        case 0:
+                            yield return new KeyValuePair<string, FileAttributes>(e, attr);
+                            break;
+                    }
+        }
+
+        static public bool TryGetFileAttributes(string path, out FileAttributes attr)
+        {
+            try { attr = File.GetAttributes(path); return true; }
+            catch (UnauthorizedAccessException) { }
+            catch (IOException) { }
+            attr = 0;
+            return false;
+        }
+
+        static public bool FileSystemEntryAvailable(string path)
+        {
+            try { File.GetAttributes(path); return true; }
+            catch (UnauthorizedAccessException) { }
+            catch (IOException) { }
+            return false;
+        }
+
+        static public string FindPathTo(string file, string preferred_relative = null, bool include_directories = false)
+        {
+            var exists = include_directories ? (Func<string, bool>)FileSystemEntryAvailable : File.Exists;
             if (string.IsNullOrEmpty(file))
                 return null;
             string p;
-            if (File.Exists(file))
+            if (exists(file))
                 p = file;
+            else if ((!string.IsNullOrEmpty(preferred_relative)) && exists(p = Path.Combine(preferred_relative, file)))
+            { }
             else if (!(
-                File.Exists(p = Path.Combine(AppDataLocation, file)) ||
-                File.Exists(p = Path.Combine(DefaultAppDataLocation, file)) ||
-                File.Exists(p = Path.Combine(GetExecutableContainingFolder(), file))
+                exists(p = Path.Combine(AppDataLocation, file)) ||
+                exists(p = Path.Combine(DefaultAppDataLocation, file)) ||
+                exists(p = Path.Combine(GetExecutableContainingFolder(), file))
                 ))
                 return null;
             return Path.GetFullPath(p);
@@ -136,6 +204,91 @@ namespace Sol.ShieldOfFaith
         static public string GetAssemblyFilePath() => GetAssemblyFilePath(Assembly.GetCallingAssembly());
         static public string GetExecutedFilePath() => GetAssemblyFilePath(Assembly.GetEntryAssembly());
 
+        public static bool EmergencyCloseEnable(this Process process)
+        {
+            if (EmergencyCloseTracking == null)
+                return false;
+            try
+            {
+                File.Create(Path.Combine(EmergencyCloseTracking, process.StartTime.Ticks + "." + process.Id)).Dispose();
+                return true;
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (ArgumentException) { }
+            catch (InvalidOperationException) { }
+            return false;
+        }
+        public static void EmergencyCloseDisable(this Process process)
+        {
+            if (process != null && EmergencyCloseTracking != null)
+            {
+                try
+                {
+                    File.Delete(Path.Combine(EmergencyCloseTracking, process.StartTime.Ticks + "." + process.Id));
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+                catch (ArgumentException) { }
+                catch (InvalidOperationException) { }
+            }
+        }
+        public static void EmergencyCloseExecute()
+        {
+            if (EmergencyCloseTracking == null) return;
+            var self = Process.GetCurrentProcess();
+            var self_terminate = false;
+            try
+            {
+                foreach (var ec in Directory.GetFiles(EmergencyCloseTracking))
+                {
+                    var n = Path.GetFileName(ec).Split('.');
+                    if (n.Length == 2 && long.TryParse(n[0], out var startTicks) && int.TryParse(n[1], out var pid))
+                    {
+                        try { File.Delete(ec); }
+                        catch (IOException) { }
+                        catch (ArgumentException) { }
+                        catch (UnauthorizedAccessException) { }
+
+                        if (pid == self.Id && self.StartTime.Ticks == startTicks)
+                            self_terminate = true;
+                        else
+                            try
+                            {
+                                using (var p = Process.GetProcessById(pid))
+                                    if (p.StartTime.Ticks == startTicks)
+                                    {
+                                        if (p.WaitForExit(50)) continue;
+                                        Problem?.Add("Emergency closing process " + p.ProcessName + " (" + p.Id + ") with start time " + p.StartTime);
+                                        if (p.CloseMainWindow() && p.WaitForExit(800)) continue;
+                                        p.Kill();
+                                    }
+                            }
+                            catch (Win32Exception) { }
+                            catch (ArgumentException) { }
+                            catch (InvalidOperationException) { }
+                    }
+                }
+            }
+            catch
+            {
+                if (self_terminate)
+                    self.Kill();
+                throw;
+            }
+            finally
+            {
+                if (self_terminate)
+                    Task.Run(() =>
+                    {
+                        if (!self.WaitForExit(self.CloseMainWindow() ? 800 : 400))
+                            self.Kill();
+                        self.Dispose();
+                    });
+                else self.Dispose();
+            }
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -186,6 +339,16 @@ namespace Sol.ShieldOfFaith
                     Problem.Add("Could not create or read settings at " + path);
                 }
 
+
+                try
+                {
+                    EmergencyCloseTracking = Directory.CreateDirectory(Path.Combine(DefaultAppDataLocation, "ManagedProcesses")).FullName;
+                    File.SetAttributes(EmergencyCloseTracking, File.GetAttributes(EmergencyCloseTracking) | FileAttributes.Hidden);
+                }
+                catch (IOException) { }
+                catch (ArgumentException) { }
+                catch (UnauthorizedAccessException) { }
+
                 string cfg = "settings.cfg";
                 {
                     string key = null;
@@ -195,6 +358,16 @@ namespace Sol.ShieldOfFaith
                         {
                             switch (a)
                             {
+                                case "--close-others":
+                                case "-co":
+                                case "-c":
+                                    EmergencyCloseExecute();
+                                    continue;
+                                case "--main-window":
+                                case "-mw":
+                                    MainWindowStartup = true;
+                                    continue;
+
                                 case "--no-deploy":
                                 case "-nd":
                                     deploy = false;
@@ -236,25 +409,32 @@ namespace Sol.ShieldOfFaith
                         Problem.Add("Unexpected or incomplete parameter " + key);
                 }
 
-                if (defaultcfglocation)
+                if (AppDataLocation == null)
+                {
                     AppDataLocation = Environment.GetEnvironmentVariable("appdata");
 
-                if (AppDataLocation == null)
-                    Problem.Add("Unable to resolve environment variable %appdata%");
-                else if (defaultcfglocation)
-                {
+                    if (AppDataLocation == null)
+                        Problem.Add("Unable to resolve environment variable %appdata%");
+                    
                     AppDataLocation = Path.Combine(AppDataLocation, DefaultAppDataSubfolder);
                     try
                     {
                         Directory.CreateDirectory(AppDataLocation);
+#if DEBUG
+                        try { File.SetAttributes(AppDataLocation, File.GetAttributes(AppDataLocation) | FileAttributes.Hidden); }
+                        catch { }
+#endif
                     }
                     catch (IOException)
                     {
                         Problem.Add("Unable to access/create subfolder " + AppDataLocation);
                         AppDataLocation = null;
                     }
+                }
 
-                    if (deploy && AppDataLocation != null )
+                if (defaultcfglocation)
+                {
+                    if (deploy && AppDataLocation != null)
                     {
                         var l = Path.GetFullPath(AppDataLocation);
                         if (!l.EndsWith(Path.DirectorySeparatorChar.ToString())) l += Path.DirectorySeparatorChar;
@@ -263,14 +443,14 @@ namespace Sol.ShieldOfFaith
                         {
                             var name = file.Item1.Replace('/', '\\');
                             name = Path.GetFullPath(Path.Combine(l, name));
-                            
+
                             if (File.Exists(name)) continue;
 
                             if (!name.StartsWith(l, StringComparison.OrdinalIgnoreCase))
                             {
                                 Problem.Add("Path " + name + " not match for container " + l);
                                 continue;
-                            }                            
+                            }
 
                             try
                             {
@@ -297,15 +477,34 @@ namespace Sol.ShieldOfFaith
             if (Problem.Count == 0) Problem = null;
 
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Faith());
-
-
-            if (Settings.SaveSettingsOnClose != Settings.When.Never)
-                try 
+            try
+            {
                 {
-                    Settings.Save(); 
+                    Faith in_fundamental_solidarity = new Faith();
+                    try
+                    {
+
+                        Application.Run(in_fundamental_solidarity);
+                    }
+                    finally
+                    {
+                        in_fundamental_solidarity.ClearIPC(false);
+                    }
                 }
-                catch (InvalidOperationException) { }
+
+                if (Settings.SaveSettingsOnClose != Settings.When.Never)
+                    try
+                    {
+                        Settings.Save();
+                    }
+                    catch (InvalidOperationException) { }
+            }
+            finally
+            {
+                if (EmergencyCloseTracking != null)
+                    using (var p = Process.GetCurrentProcess())
+                        p.EmergencyCloseDisable();
+            }
         }
     }
 }

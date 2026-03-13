@@ -110,20 +110,25 @@ namespace Sol.ShieldOfFaith
             var w = Header.Width;
             var p = Header.Padding;
 
-            float iw = headerImage.Width;
-            float ih = headerImage.Height;
-
-            if (ih > h)
+            try
             {
-                iw *= h / ih;
-                ih = h;
+                float iw = headerImage.Width;
+                float ih = headerImage.Height;
+
+                if (ih > h)
+                {
+                    iw *= h / ih;
+                    ih = h;
+                }
+
+                float t = p.Top;
+                if (t + ih > h)
+                    t = h - ih;
+
+                e.Graphics.DrawImage(headerImage, new RectangleF(w - p.Right - iw, t, iw, ih));
             }
-
-            float t = p.Top;
-            if (t + ih > h)
-                t = h - ih;
-
-            e.Graphics.DrawImage(headerImage, new RectangleF(w - p.Right - iw, t, iw, ih));
+            catch (ArgumentException) { }
+            catch (InvalidOperationException) { }
         }
     }
 }
