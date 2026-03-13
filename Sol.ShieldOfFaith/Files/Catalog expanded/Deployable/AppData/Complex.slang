@@ -41,7 +41,7 @@ layout(push_constant) uniform Push
 #pragma parameter DimLayer "DimLayer" 4.0 0.9 7.1 1.0
 
 #pragma parameter DesaturateIntensity "DesaturateIntensity" 0.0 0.0 1.0 0.005
-#pragma parameter DesaturateLayer "DesaturateLayer" 4.0 0.9 7.1 1.0
+#pragma parameter DesaturateLayer "DesaturateLayer" 6.0 0.9 7.1 1.0
 
 #pragma parameter LowEndPreservationPeak "LowEndPreservationVolume" 0.0 0.0 1.0 0.005
 #pragma parameter LowEndPreservationVolume "LowEndPreservationVolume" 0.0 0.0 1.5 0.002

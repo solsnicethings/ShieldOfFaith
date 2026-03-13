@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -12,6 +14,8 @@ namespace Sol.ShieldOfFaith
 {
     public static class Program
     {
+        static public bool MainWindowStartup;
+
         static public string ShaderGlassExecutable
         {
             get
@@ -42,6 +46,8 @@ namespace Sol.ShieldOfFaith
                 return Path.Combine(s, DefaultAppDataSubfolder);
             }
         }
+
+        static string EmergencyCloseTracking;
 
         static public IEnumerable<KeyValuePair<string, FileAttributes>> GetAvailableFilesFromTree(string root)
         {
@@ -198,6 +204,65 @@ namespace Sol.ShieldOfFaith
         static public string GetAssemblyFilePath() => GetAssemblyFilePath(Assembly.GetCallingAssembly());
         static public string GetExecutedFilePath() => GetAssemblyFilePath(Assembly.GetEntryAssembly());
 
+        public static bool EmergencyCloseEnable(this Process process)
+        {
+            if (EmergencyCloseTracking == null)
+                return false;
+            try
+            {
+                File.Create(Path.Combine(EmergencyCloseTracking, process.StartTime.Ticks + "." + process.Id)).Dispose();
+                return true;
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (ArgumentException) { }
+            catch (InvalidOperationException) { }
+            return false;
+        }
+        public static void EmergencyCloseDisable(this Process process)
+        {
+            if (process != null && EmergencyCloseTracking != null)
+            {
+                try
+                {
+                    File.Delete(Path.Combine(EmergencyCloseTracking, process.StartTime.Ticks + "." + process.Id));
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+                catch (ArgumentException) { }
+                catch (InvalidOperationException) { }
+            }
+        }
+        public static void EmergencyCloseExecute()
+        {
+            if (EmergencyCloseTracking == null) return;
+            foreach (var ec in Directory.GetFiles(EmergencyCloseTracking))
+            {
+                var n = Path.GetFileName(ec).Split('.');
+                if (n.Length == 2 && long.TryParse(n[0], out var startTicks) && int.TryParse(n[1], out var pid))
+                {
+                    try { File.Delete(ec); }
+                    catch (IOException) { }
+                    catch (ArgumentException) { }
+                    catch (UnauthorizedAccessException) { }
+                    try
+                    {
+                        using (var p = Process.GetProcessById(pid))
+                            if (p.StartTime.Ticks == startTicks)
+                            {
+                                if (p.WaitForExit(50)) continue;
+                                Problem?.Add("Emergency closing process " + p.ProcessName + " (" + p.Id + ") with start time " + p.StartTime);
+                                if (p.CloseMainWindow() && p.WaitForExit(800)) continue;
+                                p.Kill();
+                            }
+                    }
+                    catch (Win32Exception) { }
+                    catch (ArgumentException) { }
+                    catch (InvalidOperationException) { }
+                }
+            }
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -248,6 +313,16 @@ namespace Sol.ShieldOfFaith
                     Problem.Add("Could not create or read settings at " + path);
                 }
 
+
+                try
+                {
+                    EmergencyCloseTracking = Directory.CreateDirectory(Path.Combine(DefaultAppDataLocation, "ManagedProcesses")).FullName;
+                    File.SetAttributes(EmergencyCloseTracking, File.GetAttributes(EmergencyCloseTracking) | FileAttributes.Hidden);
+                }
+                catch (IOException) { }
+                catch (ArgumentException) { }
+                catch (UnauthorizedAccessException) { }
+
                 string cfg = "settings.cfg";
                 {
                     string key = null;
@@ -257,6 +332,16 @@ namespace Sol.ShieldOfFaith
                         {
                             switch (a)
                             {
+                                case "--close-others":
+                                case "-co":
+                                case "-c":
+                                    EmergencyCloseExecute();
+                                    continue;
+                                case "--main-window":
+                                case "-mw":
+                                    MainWindowStartup = true;
+                                    continue;
+
                                 case "--no-deploy":
                                 case "-nd":
                                     deploy = false;
@@ -309,6 +394,10 @@ namespace Sol.ShieldOfFaith
                     try
                     {
                         Directory.CreateDirectory(AppDataLocation);
+#if DEBUG
+                        try { File.SetAttributes(AppDataLocation, File.GetAttributes(AppDataLocation) | FileAttributes.Hidden); }
+                        catch { }
+#endif
                     }
                     catch (IOException)
                     {
@@ -362,26 +451,34 @@ namespace Sol.ShieldOfFaith
             if (Problem.Count == 0) Problem = null;
 
             Application.SetCompatibleTextRenderingDefault(false);
-
+            try
             {
-                Faith in_fundamental_solidarity = new Faith();
-                try
                 {
+                    Faith in_fundamental_solidarity = new Faith();
+                    try
+                    {
 
-                    Application.Run(in_fundamental_solidarity);
+                        Application.Run(in_fundamental_solidarity);
+                    }
+                    finally
+                    {
+                        in_fundamental_solidarity.ClearIPC(false);
+                    }
                 }
-                finally
-                {
-                    in_fundamental_solidarity.ClearIPC(false);
-                }
+
+                if (Settings.SaveSettingsOnClose != Settings.When.Never)
+                    try
+                    {
+                        Settings.Save();
+                    }
+                    catch (InvalidOperationException) { }
             }
-
-            if (Settings.SaveSettingsOnClose != Settings.When.Never)
-                try 
-                {
-                    Settings.Save(); 
-                }
-                catch (InvalidOperationException) { }
+            finally
+            {
+                if (EmergencyCloseTracking != null)
+                    using (var p = Process.GetCurrentProcess())
+                        p.EmergencyCloseDisable();
+            }
         }
     }
 }

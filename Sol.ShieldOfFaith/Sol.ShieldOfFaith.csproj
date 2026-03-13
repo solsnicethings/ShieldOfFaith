@@ -122,9 +122,10 @@
     <None Include="Files\Catalog expanded\Deployable\AppData\Simple.slang" />
     <None Include="Files\Catalog expanded\Deployable\AppData\ShieldOfFaith.sgp" />
     <None Include="Files\Catalog expanded\Deployable\AppData\ShieldOfFaith.slang" />
+    <None Include="Files\Catalog expanded\Help\sort c\Explanatory screenshots.rtf" />
     <None Include="Files\Catalog expanded\Help\sort b\User guide.rtf" />
     <None Include="Files\Catalog expanded\Help\sort a\Intro.rtf" />
-    <None Include="Files\Catalog expanded\Help\sort c\Configuration file.rtf" />
+    <None Include="Files\Catalog expanded\Help\sort d\Configuration file.rtf" />
     <None Include="Files\Catalog expanded\Help\sort z\About + Contact + Support.rtf" />
     <EmbeddedResource Include="Files\Catalog.zip" />
     <None Include="Files\make-catalog.cmd" />

@@ -195,7 +195,7 @@ namespace Sol.ShieldOfFaith
             return i;
         }
 
-        void PopulateFileSystemList()
+        public void PopulateFileSystemList()
         {
             configFileSystem.SuspendLayout();
             try
@@ -255,9 +255,9 @@ namespace Sol.ShieldOfFaith
 
                         foreach (var s in Program.Settings.IncludedSettingsRequiredIfTrueWithFullPath)
                         {
-                            if (added.ContainsKey(s.Item3)) continue;
-                            added.Add(s.Item3, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
-                                ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3));
+                            if (added.ContainsKey(s.Item3 ?? s.Item1)) continue;
+                            added.Add(s.Item3 ?? s.Item1, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
+                                ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3 ?? s.Item1));
                         }
 
                         foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
