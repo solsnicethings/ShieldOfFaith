@@ -26,7 +26,7 @@ layout(push_constant) uniform Push
     float DesaturateIntensity;
     float DesaturateLayer;
 
-    float PreserveThreshold;
+    float PreserveUpTo;
     float PreserveLayer;
 
 } params;
@@ -42,7 +42,7 @@ layout(push_constant) uniform Push
 #pragma parameter DesaturateIntensity "DesaturateIntensity" 0.3 0.0 0.9 0.005
 #pragma parameter DesaturateLayer "DesaturateLayer" 4.0 0.9 7.1 1.0
 
-#pragma parameter PreserveThreshold "PreserveThreshold" 0.0 0.0 0.5 0.002
+#pragma parameter PreserveUpTo "PreserveUpTo" 0.0 0.0 0.5 0.002
 #pragma parameter PreserveLayer "PreserveLayer" 4.0 0.9 7.1 1.0
 
 layout(std140, set = 0, binding = 0) uniform UBO
@@ -79,12 +79,56 @@ void main()
    // this is the input pixel
    vec3 input_pixel = texture(Source, vTexCoord).rgb;
 
-   bool tinted = false
+   bool to_tint = params.TintIntensity > 0;
+   bool to_dim = params.DimIntensity > 0;
+   bool to_desaturate = params.DesaturateIntensity > 0;
+   bool to_preserve = params.PreserveUpTo > 0;
 
-   for (float layer = 1.0; layer < 7.1; layer += 1.001)
+   vec3 preserved = vec3(0.0);
+   vec3 im = vec3(0.0);
+
+   for (float layer = 1.001; layer < 7.1; layer += 1.001)
    {
-   
+        if (to_preserve && layer > params.PreserveLayer)
+        {
+            to_preseve = false;
+            preserved = input_pixel;
+            if (preserved.r > params.PreserveUpTo) preserved.r = params.PreserveUpTo;
+            if (preserved.g > params.PreserveUpTo) preserved.g = params.PreserveUpTo;
+            if (preserved.b > params.PreserveUpTo) preserved.b = params.PreserveUpTo;
+            input_pixel -= preserved;
+        }
+
+        int divby = 0;
+
+        if (to_tint && layer > 3.0) {
+            to_tint = false;
+            im += input_pixel * (1 - params.TintIntensity) +
+                vec3(input_pixel.r * params.TintRed, input_pixel.g * params.TintGreen, input_pixel.b * params.TintBlue) * params.TintIntensity;
+            divby = 1;
+        }
+
+        if (to_dim && layer > params.DimLayer) {
+            to_dim = false;
+            im += sqrt(input_pixel) * params.DimIntensity + input_pixel * (1 - params.DimIntensity);
+            divby += 1;
+        }
+
+        if (to_desaturate && layer > params.DesaturateLayer)
+        {
+            to_desaturate = false;
+            im += vec3((input_pixel.r + input_pixel.g + input_pixel.b) * params.DesaturateIntensity / 3.0) + 
+                input_pixel * (1 - params.DesaturateIntensity);
+            divby += 1;
+        }
+
+        if (divby > 0)
+        {
+            input_pixel = im / divby;
+            divby = 0;
+            im = vec3(0.0);
+        }
    }
 
-   FragColor = vec4(input_pixel * (1 - params.Intensity), 1.0);
+   FragColor = vec4(input_pixel + preserved, 1.0);
 }
