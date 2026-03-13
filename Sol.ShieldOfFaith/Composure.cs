@@ -30,12 +30,14 @@ namespace Sol.ShieldOfFaith
             Custom = 0x10,
             Optional = 0x20,
             Required = 0x40,
+            Inherited = 0x80,
 
-            DataDirectory = 0x100 | Directory,
+            DataDirectory = 0x100| Directory,
             Config = 0x200 | File,
             Shader = 0x300 | File,
             ShaderProfile = 0x400 | File,
-            ShaderApp = 0x500 | File
+            ShaderApp = 0x500 | File,
+            Referenced = 0x600
         }
 
         void ResetSessionInfo()
@@ -137,6 +139,43 @@ namespace Sol.ShieldOfFaith
         void PopulateFileSystemList()
         {
             var added = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
+
+            void addfileorsubdir(string fullpath, string rawpath = null, ConfigFunction fnc = 0, FileAttributes attr = 0)
+            {
+                if (attr == 0 && !Program.TryGetFileAttributes(fullpath, out attr))
+                    fnc |= ConfigFunction.Missing;
+                else
+                {
+                    if ((attr & FileAttributes.Directory) == 0)
+                        fnc |= ConfigFunction.File;
+                    else
+                    {
+                        added[fullpath] = addConfigItem(rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath,
+                            fnc | ConfigFunction.Directory, fullpath);
+                        foreach (var c in Program.GetAvailableFilesFromTree(fullpath))
+                            if (!added.ContainsKey(c.Key)) addfileorsubdir(c.Key, attr: c.Value);
+                        return;
+                    }
+                }
+
+                switch (Path.GetExtension(fullpath).ToLowerInvariant())
+                {
+                    case ".cfg":
+                        fnc |= ConfigFunction.Config;
+                        break;
+                    case ".slang":
+                        fnc |= ConfigFunction.Shader;
+                        break;
+                    case ".sgp":
+                        fnc |= ConfigFunction.ShaderProfile;
+                        break;
+                }
+
+                added[fullpath] = addConfigItem(
+                    rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath, fnc, fullpath
+                    );
+            }
+
             var l = Program.AppDataLocation;
             {
                 var d = Program.DefaultAppDataLocation;
@@ -157,6 +196,9 @@ namespace Sol.ShieldOfFaith
                         added.Add(s.Item3, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
                             ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3));
                     }
+
+                    foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
+                        addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.Referenced : ConfigFunction.Referenced);
                 }
 
                 d = Program.ShaderGlassExecutable;
@@ -184,29 +226,16 @@ namespace Sol.ShieldOfFaith
                 }
             }
 
-            foreach (var e in Directory.GetFiles(l))
+            foreach (var e in Directory.GetFileSystemEntries(l))
             {
                 if (added.ContainsKey(e)) continue;
-                try { if (0 != (File.GetAttributes(e) & (FileAttributes.Hidden | FileAttributes.System))) continue; }
-                catch (IOException) { continue; }
-
-                var fnc = ConfigFunction.File;
-
-                switch (Path.GetExtension(e).ToLowerInvariant())
-                {
-                    case ".cfg":
-                        fnc |= ConfigFunction.Config;
-                        break;
-                    case ".slang":
-                        fnc |= ConfigFunction.Shader;
-                        break;
-                    case ".sgp":
-                        fnc |= ConfigFunction.ShaderProfile;
-                        break;
-                }
-
-                added.Add(e, addConfigItem(Path.GetFileName(e), fnc, e));
+                if (Program.TryGetFileAttributes(e, out var attr) == false || 0 != (attr & (FileAttributes.Hidden | FileAttributes.System)))
+                    continue;
+                addfileorsubdir(e, attr: attr);
             }
+
+            chCfgName.Width = -2;
+            chCfgPath.Width = -2;
         }
 
         protected override void OnVisibleChanged(EventArgs e)

@@ -43,17 +43,60 @@ namespace Sol.ShieldOfFaith
             }
         }
 
-        static public string FindPathTo(string file)
+        static public IEnumerable<KeyValuePair<string, FileAttributes>> GetAvailableFilesFromTree(string root)
+        {
+            string[] fs;
+            try
+            {
+                fs = Directory.GetFileSystemEntries(root);
+            }
+            catch (UnauthorizedAccessException) { yield break; }
+            catch (IOException) { yield break; }
+
+            foreach (var e in fs)
+                if (TryGetFileAttributes(e, out var attr))
+                    switch (attr & (FileAttributes.Directory | FileAttributes.Hidden | FileAttributes.System))
+                    {
+                        case FileAttributes.Directory:
+                            foreach (var c in GetAvailableFilesFromTree(e))
+                                yield return c;
+                            break;
+                        case 0:
+                            yield return new KeyValuePair<string, FileAttributes>(e, attr);
+                            break;
+                    }
+        }
+
+        static public bool TryGetFileAttributes(string path, out FileAttributes attr)
+        {
+            try { attr = File.GetAttributes(path); return true; }
+            catch (UnauthorizedAccessException) { }
+            catch (IOException) { }
+            attr = 0;
+            return false;
+        }
+
+        static public bool FileSystemEntryAvailable(string path)
+        {
+            try { File.GetAttributes(path); return true; }
+            catch (UnauthorizedAccessException) { }
+            catch (IOException) { }
+            return false;
+        }
+
+        static public string FindPathTo(string file, string preferred_relative = null)
         {
             if (string.IsNullOrEmpty(file))
                 return null;
             string p;
-            if (File.Exists(file))
+            if (FileSystemEntryAvailable(file))
                 p = file;
+            else if ((!string.IsNullOrEmpty(preferred_relative)) && FileSystemEntryAvailable(p = Path.Combine(preferred_relative, file)))
+            { }
             else if (!(
-                File.Exists(p = Path.Combine(AppDataLocation, file)) ||
-                File.Exists(p = Path.Combine(DefaultAppDataLocation, file)) ||
-                File.Exists(p = Path.Combine(GetExecutableContainingFolder(), file))
+                FileSystemEntryAvailable(p = Path.Combine(AppDataLocation, file)) ||
+                FileSystemEntryAvailable(p = Path.Combine(DefaultAppDataLocation, file)) ||
+                FileSystemEntryAvailable(p = Path.Combine(GetExecutableContainingFolder(), file))
                 ))
                 return null;
             return Path.GetFullPath(p);

@@ -97,7 +97,7 @@
             // 
             // configFileSystem
             // 
-            this.configFileSystem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(120)))), ((int)(((byte)(115)))));
+            this.configFileSystem.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(128)))), ((int)(((byte)(122)))));
             this.configFileSystem.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.chCfgName,
             this.chCfgFunction,
@@ -109,7 +109,7 @@
             this.configFileSystem.HideSelection = false;
             this.configFileSystem.Location = new System.Drawing.Point(4, 3);
             this.configFileSystem.Name = "configFileSystem";
-            this.configFileSystem.Size = new System.Drawing.Size(508, 359);
+            this.configFileSystem.Size = new System.Drawing.Size(534, 359);
             this.configFileSystem.TabIndex = 0;
             this.configFileSystem.UseCompatibleStateImageBehavior = false;
             this.configFileSystem.View = System.Windows.Forms.View.Details;
@@ -127,14 +127,14 @@
             // chCfgPath
             // 
             this.chCfgPath.Text = "Path";
-            this.chCfgPath.Width = 235;
+            this.chCfgPath.Width = 262;
             // 
             // panel2
             // 
             this.panel2.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel2.Location = new System.Drawing.Point(512, 3);
+            this.panel2.Location = new System.Drawing.Point(538, 3);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(130, 359);
+            this.panel2.Size = new System.Drawing.Size(104, 359);
             this.panel2.TabIndex = 1;
             // 
             // panel3

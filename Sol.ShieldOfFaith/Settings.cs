@@ -32,6 +32,11 @@ namespace Sol.ShieldOfFaith
     {
         public string LocationOnDisk => path;
 
+        public string[]
+            AccumulatedRequiredFiles,
+            AccumulatedOptionalFiles,
+            AccumulatedResourcePaths;
+
         string path;
         Settings included;
 
@@ -119,6 +124,7 @@ namespace Sol.ShieldOfFaith
 
             K_extra_settings_file = "IncludeSettingsFile",
             K_optional_settings_file = "OptionalSettingsFile",
+            K_extra_data = "Resource",
 
             K_visualstyleson = "VisualStylesEnabled",
             K_visualstylesoff = "VisualStylesDisabled",
@@ -190,6 +196,32 @@ namespace Sol.ShieldOfFaith
             this[K_ControlStyler] = l;
         }
 
+        public List<string> DirectlySpecifiedResourcePaths
+        {
+            get => TryGetValue(K_extra_data, out var l) ? l : null;
+            set => this[K_extra_data] = value;
+        }
+
+        public IEnumerable<KeyValuePair<string, string>> ResourcePaths_valueShowsDirectSpecification
+        {
+            get
+            {
+                var spec = DirectlySpecifiedResourcePaths;
+                if (spec == null || spec.Count == 0) return AccumulatedResourcePaths.Select(r => new KeyValuePair<string, string>(r, null));
+
+                Dictionary<string, string> output = new Dictionary<string, string>(spec.Count + AccumulatedResourcePaths.Length, StringComparer.OrdinalIgnoreCase);
+                foreach (var r in AccumulatedResourcePaths) output[r] = null;
+                
+                var path = this.path;
+                if (!string.IsNullOrEmpty(path)) path = Path.GetDirectoryName(path);
+
+                foreach (var s in spec) output[Program.FindPathTo(s, path) ?? s] = s;
+
+                return output;
+            }
+        }
+
+
         public IEnumerable<Tuple<string, bool>> IncludedSettingsRequiredIfTrue
         {
             get
@@ -213,7 +245,7 @@ namespace Sol.ShieldOfFaith
                     {
                         var path = Path.GetDirectoryName(this.path);
                         do yield return new Tuple<string, bool, string>(e.Current.Item1, e.Current.Item2,
-                            Path.GetFullPath(Path.Combine(path, e.Current.Item1))); while (e.MoveNext());
+                            Program.FindPathTo(e.Current.Item1, path)); while (e.MoveNext());
                     }
             }
         }
@@ -616,37 +648,43 @@ namespace Sol.ShieldOfFaith
         public Settings() : base(StringComparer.OrdinalIgnoreCase) { }
         private Settings(IDictionary<string, List<string>> copy) : base(copy, StringComparer.OrdinalIgnoreCase) { }
 
-        public bool Load(string path , Dictionary<string, Settings> preloaded = null)
+        public bool Load(string path, Dictionary<string, Settings> preloaded = null)
         {
             path = Path.GetFullPath(path);
 
-                if (preloaded != null)
-                    if (preloaded.TryGetValue(path, out var alt))
-                    {
-                        Clear();
-                        foreach (var e in alt)
-                            Add(e.Key, e.Value);
-                        this.path = path;
-                        return true;
-                    }
-                    else preloaded.Add(path, this);
+            if (preloaded != null)
+                if (preloaded.TryGetValue(path, out var alt))
+                {
+                    Clear();
+                    foreach (var e in alt)
+                        Add(e.Key, e.Value);
+                    AccumulatedOptionalFiles = alt.AccumulatedOptionalFiles;
+                    AccumulatedRequiredFiles = alt.AccumulatedRequiredFiles;
+                    AccumulatedResourcePaths = alt.AccumulatedResourcePaths;
+                    this.path = path;
+                    return true;
+                }
+                else preloaded.Add(path, this);
+
+            Remove(K_LoadError);
 
             if (Count != 0)
             {
-                LoadError.Clear();
                 var proxy = new Settings();
-                if (proxy.Load(path))
+                if (proxy.Load(path, preloaded))
                 {
                     Clear();
                     foreach (var p in proxy)
                         Add(p.Key, p.Value);
+                    AccumulatedOptionalFiles = proxy.AccumulatedOptionalFiles;
+                    AccumulatedRequiredFiles = proxy.AccumulatedRequiredFiles;
+                    AccumulatedResourcePaths = proxy.AccumulatedResourcePaths;
+                    this.path = path;
                     return true;
                 }
                 LoadError = proxy.LoadError;
                 return false;
             }
-
-            LoadError.Clear();
 
             try
             {
@@ -691,60 +729,127 @@ namespace Sol.ShieldOfFaith
             Remove(K_LoadError + '#');
             CorrectKeys();
 
-            this.path = path;
-            included = null;
-            using (var inc = IncludedSettingsRequiredIfTrue.GetEnumerator())
             {
-                if (inc.MoveNext())
+                var filesysrefs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                void addfsref(string refpath, string pathType)
                 {
-                    path = Path.GetDirectoryName(path);
-                    if (preloaded == null)
                     {
-                        preloaded = new Dictionary<string, Settings>();
-                        preloaded.Add(this.path, this);
+                        var p = Program.FindPathTo(refpath, path);
+                        if (p == null)
+                            LoadError.Add("Unable to find \"" + refpath + "\" while processing config in " + path);
+                        else refpath = p;
                     }
-                    if (!TryGetValue(K_LoadError, out var err)) err = null;
-                    do
+                    if (filesysrefs.TryGetValue(refpath, out var existing))
                     {
-                        var proxy = new Settings();
-                        var loaded = proxy.Load(Path.Combine(path, inc.Current.Item1), preloaded);
-                        if (proxy.TryGetValue(K_LoadError, out var perr) && perr != null && perr.Count > 0 && (loaded || inc.Current.Item2))
+                        if (pathType == K_optional_settings_file) return;
+                        if (existing == K_extra_data) return;
+                    }
+                    filesysrefs[refpath] = pathType;
+                }
+
+                this.path = path;
+                included = null;
+
+                path = Path.GetDirectoryName(path);
+
+                using (var inc = IncludedSettingsRequiredIfTrue.GetEnumerator())
+                {
+                    var unkeep = new List<string>();
+                    if (!ContainsKey(K_extra_settings_file)) Add(K_extra_settings_file, unkeep);
+                    if (!ContainsKey(K_optional_settings_file)) Add(K_optional_settings_file, unkeep);
+
+                    {
+                        if (TryGetValue(K_extra_data, out var l))
                         {
-                            if (err == null) Add(K_LoadError, perr);
-                            else err.AddRange(perr);
+                            if (l != null)
+                                foreach (var f in l) addfsref(f, K_extra_data);
                         }
-                        if (loaded)
+                        else Add(K_extra_data, unkeep);
+                    }
+
+                    if (inc.MoveNext())
+                    {
+                        if (preloaded == null)
                         {
-                            if (included == null) included = proxy;
-                            else
+                            preloaded = new Dictionary<string, Settings>();
+                            preloaded.Add(this.path, this);
+                        }
+                        if (!TryGetValue(K_LoadError, out var err)) err = null;
+                        do
+                        {
+                            var proxy = new Settings();
+                            bool loaded;
                             {
-                                if (included.path != null && included == preloaded[included.path])
-                                    included = new Settings(included);
-                                foreach (var cfg in proxy)
+                                var loadpath = Program.FindPathTo(inc.Current.Item1, path) ?? inc.Current.Item1;
+                                addfsref(loadpath, inc.Current.Item2 ? K_extra_settings_file : K_optional_settings_file);
+                                loaded = proxy.Load(loadpath, preloaded);
+                            }
+                            if (proxy.TryGetValue(K_LoadError, out var perr) && perr != null && perr.Count > 0 && (loaded || inc.Current.Item2))
+                            {
+                                if (err == null) Add(K_LoadError, perr);
+                                else err.AddRange(perr);
+                            }
+                            if (loaded)
+                            {
+                                foreach (var p in proxy.AccumulatedOptionalFiles) addfsref(p, K_optional_settings_file);
+                                foreach (var p in proxy.AccumulatedRequiredFiles) addfsref(p, K_extra_settings_file);
+                                foreach (var p in proxy.AccumulatedResourcePaths) addfsref(p, K_extra_data);
+
+                                if (included == null) included = proxy;
+                                else
                                 {
-                                    if (!included.ContainsKey(cfg.Key))
-                                        included.Add(cfg.Key, cfg.Value);
+                                    if (included.path != null && included == preloaded[included.path])
+                                        included = new Settings(included);
+                                    foreach (var cfg in proxy)
+                                    {
+                                        if (!included.ContainsKey(cfg.Key))
+                                            included.Add(cfg.Key, cfg.Value);
+                                    }
                                 }
                             }
-                        }
-                    } while (inc.MoveNext());
+                        } while (inc.MoveNext());
 
-                    if (included != null)
-                    {
-                        included.Remove(K_LoadError);
-                        foreach (var cfg in included)
-                            if (!ContainsKey(cfg.Key))
-                                Add(cfg.Key, cfg.Value);
+                        if (included != null)
+                        {
+                            included.Remove(K_LoadError);
+                            foreach (var cfg in included)
+                                if (!ContainsKey(cfg.Key))
+                                    Add(cfg.Key, cfg.Value);
+                        }
                     }
+                    if (this[K_extra_data] == unkeep) Remove(K_extra_data);
+                    if (this[K_optional_settings_file] == unkeep) Remove(K_optional_settings_file);
+                    if (this[K_extra_settings_file] == unkeep) Remove(K_extra_settings_file);
+                }
+
+                {
+                    List<string>
+                        data = new List<string>(), optional = new List<string>(), required = new List<string>();
+                    foreach (var f in filesysrefs)
+                        switch (f.Value)
+                        {
+                            case K_extra_data:
+                                data.Add(f.Key);
+                                break;
+                            case K_extra_settings_file:
+                                required.Add(f.Key);
+                                break;
+                            default:
+                                optional.Add(f.Key);
+                                break;
+                        }
+                    AccumulatedOptionalFiles = optional.Count == 0 ? Array.Empty<string>() : optional.ToArray();
+                    AccumulatedRequiredFiles = required.Count == 0 ? Array.Empty<string>() : required.ToArray();
+                    AccumulatedResourcePaths = data.Count == 0 ? Array.Empty<string>() : data.ToArray();
                 }
             }
+
 
             {
                 var redirect = RedirectSettingsFile;
                 if (!String.IsNullOrEmpty(redirect))
                 {
-                    if (this.path == path) path = Path.GetDirectoryName(path);
-
                     if (preloaded == null)
                     {
                         preloaded = new Dictionary<string, Settings>();
