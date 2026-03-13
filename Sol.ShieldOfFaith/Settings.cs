@@ -33,9 +33,9 @@ namespace Sol.ShieldOfFaith
         public string LocationOnDisk => path;
 
         public string[]
-            AccumulatedRequiredFiles,
-            AccumulatedOptionalFiles,
-            AccumulatedResourcePaths;
+            AccumulatedRequiredFiles = new string[0],
+            AccumulatedOptionalFiles = new string[0],
+            AccumulatedResourcePaths = new string[0];
 
         string path;
         Settings included;
@@ -215,7 +215,7 @@ namespace Sol.ShieldOfFaith
                 var path = this.path;
                 if (!string.IsNullOrEmpty(path)) path = Path.GetDirectoryName(path);
 
-                foreach (var s in spec) output[Program.FindPathTo(s, path) ?? s] = s;
+                foreach (var s in spec) output[Program.FindPathTo(s, path, true) ?? s] = s;
 
                 return output;
             }
@@ -735,7 +735,7 @@ namespace Sol.ShieldOfFaith
                 void addfsref(string refpath, string pathType)
                 {
                     {
-                        var p = Program.FindPathTo(refpath, path);
+                        var p = Program.FindPathTo(refpath, path, pathType == K_extra_data);
                         if (p == null)
                             LoadError.Add("Unable to find \"" + refpath + "\" while processing config in " + path);
                         else refpath = p;

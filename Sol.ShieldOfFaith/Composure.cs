@@ -27,7 +27,7 @@ namespace Sol.ShieldOfFaith
 
             Missing = unchecked((int)0x80000000),
 
-            Custom = 0x10,
+            Referenced = 0x10,
             Optional = 0x20,
             Required = 0x40,
             Inherited = 0x80,
@@ -37,7 +37,6 @@ namespace Sol.ShieldOfFaith
             Shader = 0x300 | File,
             ShaderProfile = 0x400 | File,
             ShaderApp = 0x500 | File,
-            Referenced = 0x600
         }
 
         void ResetSessionInfo()
@@ -199,6 +198,30 @@ namespace Sol.ShieldOfFaith
 
                     foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
                         addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.Referenced : ConfigFunction.Referenced);
+
+                    foreach (var s in Program.Settings.AccumulatedRequiredFiles)
+                        if (added.TryGetValue(s, out var i) && Enum.TryParse<ConfigFunction>(i.SubItems[chCfgFunction.Index].Text, out var f))
+                        {
+                            if ((f & (ConfigFunction.Required | ConfigFunction.File)) == (ConfigFunction.Required | ConfigFunction.File)) continue;
+                            f = (f | ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File) & ~ConfigFunction.Optional;
+                            i.SubItems[chCfgFunction.Index].Text = f.ToString();
+                        }
+                        else addfileorsubdir(s, fnc: ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File);
+                    foreach (var s in Program.Settings.AccumulatedOptionalFiles)
+                        if (added.TryGetValue(s, out var i) && Enum.TryParse<ConfigFunction>(i.SubItems[chCfgFunction.Index].Text, out var f))
+                        {
+                            switch (f & (ConfigFunction.Required | ConfigFunction.Optional | ConfigFunction.File))
+                            {
+                                case ConfigFunction.Required | ConfigFunction.File:
+                                    continue;
+                                case ConfigFunction.Optional | ConfigFunction.File:
+                                    continue;
+                            }
+                            f |= ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File;
+                            i.SubItems[chCfgFunction.Index].Text = f.ToString();
+                        }
+                        else addfileorsubdir(s, fnc: ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File);
+
                 }
 
                 d = Program.ShaderGlassExecutable;
@@ -225,7 +248,7 @@ namespace Sol.ShieldOfFaith
                         added[f] = addConfigItem(d, ConfigFunction.Shader | ConfigFunction.Active, f);
                 }
             }
-
+            if (Directory.Exists(l))
             foreach (var e in Directory.GetFileSystemEntries(l))
             {
                 if (added.ContainsKey(e)) continue;

@@ -84,19 +84,20 @@ namespace Sol.ShieldOfFaith
             return false;
         }
 
-        static public string FindPathTo(string file, string preferred_relative = null)
+        static public string FindPathTo(string file, string preferred_relative = null, bool include_directories = false)
         {
+            var exists = include_directories ? (Func<string, bool>)FileSystemEntryAvailable : File.Exists;
             if (string.IsNullOrEmpty(file))
                 return null;
             string p;
-            if (FileSystemEntryAvailable(file))
+            if (exists(file))
                 p = file;
-            else if ((!string.IsNullOrEmpty(preferred_relative)) && FileSystemEntryAvailable(p = Path.Combine(preferred_relative, file)))
+            else if ((!string.IsNullOrEmpty(preferred_relative)) && exists(p = Path.Combine(preferred_relative, file)))
             { }
             else if (!(
-                FileSystemEntryAvailable(p = Path.Combine(AppDataLocation, file)) ||
-                FileSystemEntryAvailable(p = Path.Combine(DefaultAppDataLocation, file)) ||
-                FileSystemEntryAvailable(p = Path.Combine(GetExecutableContainingFolder(), file))
+                exists(p = Path.Combine(AppDataLocation, file)) ||
+                exists(p = Path.Combine(DefaultAppDataLocation, file)) ||
+                exists(p = Path.Combine(GetExecutableContainingFolder(), file))
                 ))
                 return null;
             return Path.GetFullPath(p);
