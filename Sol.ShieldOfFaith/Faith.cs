@@ -452,6 +452,7 @@ namespace Sol.ShieldOfFaith
             AttachHelperText(containerIntensityLimit, "An intensity limit around 200 ensures that you don't accidentally make the screen fully dark.");
             AttachHelperText(colourManagerShield.BarAlpha, "Increase value to make the shield colour apply more strongly. Values above 200 are hard to see through.", true);
             AttachHelperText(labelTitle, labelTooltip.Text = "Complete programs and source code made available under GNU GPL 3.0 license");
+            AttachHelperText(buttonEmergencyClose, "Tries to close all Shield of Faith processes and associated Shader glass processes.");
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)

@@ -236,30 +236,56 @@ namespace Sol.ShieldOfFaith
         public static void EmergencyCloseExecute()
         {
             if (EmergencyCloseTracking == null) return;
-            foreach (var ec in Directory.GetFiles(EmergencyCloseTracking))
+            var self = Process.GetCurrentProcess();
+            var self_terminate = false;
+            try
             {
-                var n = Path.GetFileName(ec).Split('.');
-                if (n.Length == 2 && long.TryParse(n[0], out var startTicks) && int.TryParse(n[1], out var pid))
+                foreach (var ec in Directory.GetFiles(EmergencyCloseTracking))
                 {
-                    try { File.Delete(ec); }
-                    catch (IOException) { }
-                    catch (ArgumentException) { }
-                    catch (UnauthorizedAccessException) { }
-                    try
+                    var n = Path.GetFileName(ec).Split('.');
+                    if (n.Length == 2 && long.TryParse(n[0], out var startTicks) && int.TryParse(n[1], out var pid))
                     {
-                        using (var p = Process.GetProcessById(pid))
-                            if (p.StartTime.Ticks == startTicks)
+                        try { File.Delete(ec); }
+                        catch (IOException) { }
+                        catch (ArgumentException) { }
+                        catch (UnauthorizedAccessException) { }
+
+                        if (pid == self.Id && self.StartTime.Ticks == startTicks)
+                            self_terminate = true;
+                        else
+                            try
                             {
-                                if (p.WaitForExit(50)) continue;
-                                Problem?.Add("Emergency closing process " + p.ProcessName + " (" + p.Id + ") with start time " + p.StartTime);
-                                if (p.CloseMainWindow() && p.WaitForExit(800)) continue;
-                                p.Kill();
+                                using (var p = Process.GetProcessById(pid))
+                                    if (p.StartTime.Ticks == startTicks)
+                                    {
+                                        if (p.WaitForExit(50)) continue;
+                                        Problem?.Add("Emergency closing process " + p.ProcessName + " (" + p.Id + ") with start time " + p.StartTime);
+                                        if (p.CloseMainWindow() && p.WaitForExit(800)) continue;
+                                        p.Kill();
+                                    }
                             }
+                            catch (Win32Exception) { }
+                            catch (ArgumentException) { }
+                            catch (InvalidOperationException) { }
                     }
-                    catch (Win32Exception) { }
-                    catch (ArgumentException) { }
-                    catch (InvalidOperationException) { }
                 }
+            }
+            catch
+            {
+                if (self_terminate)
+                    self.Kill();
+                throw;
+            }
+            finally
+            {
+                if (self_terminate)
+                    Task.Run(() =>
+                    {
+                        if (!self.WaitForExit(self.CloseMainWindow() ? 800 : 400))
+                            self.Kill();
+                        self.Dispose();
+                    });
+                else self.Dispose();
             }
         }
 
