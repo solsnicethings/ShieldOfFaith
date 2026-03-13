@@ -461,10 +461,24 @@ namespace Sol.ShieldOfFaith
         void ShowOptions()
         {
             if (configWin == null)
+            {
                 configWin = new Composure();
-            configWin.FormClosing += ConfigWin_FormClosing;
+                configWin.FormClosing += ConfigWin_FormClosing;
+                configWin.ShaderChanged += ConfigWin_ShaderChanged;
+                configWin.ShaderProfileChanged += ConfigWin_ShaderProfileChanged;
+            }
             configWin.Visible = true;
             configWin.Activate();
+        }
+
+        private void ConfigWin_ShaderProfileChanged(object sender, EventArgs e)
+        {
+            ipc?.LoadProfile(Program.Settings.FindRelative(Program.Settings.ShaderGlassProfile));
+        }
+
+        private void ConfigWin_ShaderChanged(object sender, EventArgs e)
+        {
+            ipc?.LoadShader(Program.Settings.FindRelative(Program.Settings.ShaderGlassCustomShader));
         }
 
         private void ConfigWin_FormClosing(object sender, FormClosingEventArgs e)

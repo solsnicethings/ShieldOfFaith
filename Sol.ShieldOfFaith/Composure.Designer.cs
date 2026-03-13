@@ -36,7 +36,7 @@
             this.chCfgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.chCfgFunction = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.chCfgPath = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.panel2 = new System.Windows.Forms.Panel();
+            this.panelFileActions = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
             this.comboFilesByOrigin = new System.Windows.Forms.ComboBox();
             this.radioShowNoFiles = new System.Windows.Forms.RadioButton();
@@ -58,9 +58,12 @@
             this.tabHelpSelector = new System.Windows.Forms.TabControl();
             this.checkMissing = new System.Windows.Forms.CheckBox();
             this.labelFileOrigin = new System.Windows.Forms.Label();
+            this.buttonCreate = new System.Windows.Forms.Button();
+            this.buttonActivate = new System.Windows.Forms.Button();
+            this.buttonOpen = new System.Windows.Forms.Button();
             this.Tabs.SuspendLayout();
             this.tabPage2.SuspendLayout();
-            this.panel2.SuspendLayout();
+            this.panelFileActions.SuspendLayout();
             this.panel3.SuspendLayout();
             this.tabSession.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -97,7 +100,7 @@
             // 
             this.tabPage2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(100)))), ((int)(((byte)(95)))));
             this.tabPage2.Controls.Add(this.configFileSystem);
-            this.tabPage2.Controls.Add(this.panel2);
+            this.tabPage2.Controls.Add(this.panelFileActions);
             this.tabPage2.Controls.Add(this.panel3);
             this.tabPage2.Location = new System.Drawing.Point(4, 23);
             this.tabPage2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
@@ -120,11 +123,13 @@
             this.configFileSystem.FullRowSelect = true;
             this.configFileSystem.HideSelection = false;
             this.configFileSystem.Location = new System.Drawing.Point(4, 3);
+            this.configFileSystem.MultiSelect = false;
             this.configFileSystem.Name = "configFileSystem";
             this.configFileSystem.Size = new System.Drawing.Size(534, 359);
             this.configFileSystem.TabIndex = 0;
             this.configFileSystem.UseCompatibleStateImageBehavior = false;
             this.configFileSystem.View = System.Windows.Forms.View.Details;
+            this.configFileSystem.SelectedIndexChanged += new System.EventHandler(this.configFileSystem_SelectedIndexChanged);
             // 
             // chCfgName
             // 
@@ -141,15 +146,20 @@
             this.chCfgPath.Text = "Path";
             this.chCfgPath.Width = 262;
             // 
-            // panel2
+            // panelFileActions
             // 
-            this.panel2.Controls.Add(this.labelFileOrigin);
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.panel2.Location = new System.Drawing.Point(538, 3);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(104, 359);
-            this.panel2.TabIndex = 1;
+            this.panelFileActions.Controls.Add(this.buttonOpen);
+            this.panelFileActions.Controls.Add(this.buttonActivate);
+            this.panelFileActions.Controls.Add(this.buttonCreate);
+            this.panelFileActions.Controls.Add(this.labelFileOrigin);
+            this.panelFileActions.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panelFileActions.Enabled = false;
+            this.panelFileActions.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.panelFileActions.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.panelFileActions.Location = new System.Drawing.Point(538, 3);
+            this.panelFileActions.Name = "panelFileActions";
+            this.panelFileActions.Size = new System.Drawing.Size(104, 359);
+            this.panelFileActions.TabIndex = 1;
             // 
             // panel3
             // 
@@ -198,9 +208,9 @@
             this.radioOtherfiles.AutoSize = true;
             this.radioOtherfiles.Location = new System.Drawing.Point(554, 34);
             this.radioOtherfiles.Name = "radioOtherfiles";
-            this.radioOtherfiles.Size = new System.Drawing.Size(88, 26);
+            this.radioOtherfiles.Size = new System.Drawing.Size(78, 26);
             this.radioOtherfiles.TabIndex = 5;
-            this.radioOtherfiles.Text = " &Other";
+            this.radioOtherfiles.Text = "Othe&r";
             this.radioOtherfiles.UseVisualStyleBackColor = true;
             this.radioOtherfiles.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
             // 
@@ -233,7 +243,7 @@
             this.radioShowConfigs.Name = "radioShowConfigs";
             this.radioShowConfigs.Size = new System.Drawing.Size(88, 26);
             this.radioShowConfigs.TabIndex = 2;
-            this.radioShowConfigs.Text = "&Config";
+            this.radioShowConfigs.Text = "Confi&g";
             this.radioShowConfigs.UseVisualStyleBackColor = true;
             this.radioShowConfigs.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
             // 
@@ -409,11 +419,48 @@
             this.labelFileOrigin.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelFileOrigin.ForeColor = System.Drawing.Color.WhiteSmoke;
             this.labelFileOrigin.Location = new System.Drawing.Point(0, 320);
+            this.labelFileOrigin.Margin = new System.Windows.Forms.Padding(0);
             this.labelFileOrigin.Name = "labelFileOrigin";
             this.labelFileOrigin.Size = new System.Drawing.Size(104, 39);
             this.labelFileOrigin.TabIndex = 8;
-            this.labelFileOrigin.Text = "File o&rigin:";
+            this.labelFileOrigin.Text = "File origin:";
             this.labelFileOrigin.Click += new System.EventHandler(this.labelFileOrigin_Click);
+            // 
+            // buttonCreate
+            // 
+            this.buttonCreate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(56)))));
+            this.buttonCreate.Dock = System.Windows.Forms.DockStyle.Top;
+            this.buttonCreate.Location = new System.Drawing.Point(0, 0);
+            this.buttonCreate.Name = "buttonCreate";
+            this.buttonCreate.Size = new System.Drawing.Size(104, 26);
+            this.buttonCreate.TabIndex = 9;
+            this.buttonCreate.Text = "&Create";
+            this.buttonCreate.UseVisualStyleBackColor = false;
+            this.buttonCreate.Click += new System.EventHandler(this.buttonCreate_Click);
+            // 
+            // buttonActivate
+            // 
+            this.buttonActivate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(56)))));
+            this.buttonActivate.Dock = System.Windows.Forms.DockStyle.Top;
+            this.buttonActivate.Location = new System.Drawing.Point(0, 26);
+            this.buttonActivate.Name = "buttonActivate";
+            this.buttonActivate.Size = new System.Drawing.Size(104, 26);
+            this.buttonActivate.TabIndex = 10;
+            this.buttonActivate.Text = "&Activate";
+            this.buttonActivate.UseVisualStyleBackColor = false;
+            this.buttonActivate.Click += new System.EventHandler(this.buttonActivate_Click);
+            // 
+            // buttonOpen
+            // 
+            this.buttonOpen.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(28)))), ((int)(((byte)(56)))));
+            this.buttonOpen.Dock = System.Windows.Forms.DockStyle.Top;
+            this.buttonOpen.Location = new System.Drawing.Point(0, 52);
+            this.buttonOpen.Name = "buttonOpen";
+            this.buttonOpen.Size = new System.Drawing.Size(104, 26);
+            this.buttonOpen.TabIndex = 11;
+            this.buttonOpen.Text = "&Open";
+            this.buttonOpen.UseVisualStyleBackColor = false;
+            this.buttonOpen.Click += new System.EventHandler(this.buttonOpen_Click);
             // 
             // Composure
             // 
@@ -431,7 +478,7 @@
             this.Text = "Composure (Shield of Faith configuration window)";
             this.Tabs.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
-            this.panel2.ResumeLayout(false);
+            this.panelFileActions.ResumeLayout(false);
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
             this.tabSession.ResumeLayout(false);
@@ -457,7 +504,7 @@
         private System.Windows.Forms.RadioButton radioTraceHigh;
         private System.Windows.Forms.TabControl tabHelpSelector;
         private System.Windows.Forms.ListView configFileSystem;
-        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Panel panelFileActions;
         private System.Windows.Forms.ColumnHeader chCfgName;
         private System.Windows.Forms.ColumnHeader chCfgFunction;
         private System.Windows.Forms.ColumnHeader chCfgPath;
@@ -472,5 +519,8 @@
         private System.Windows.Forms.ComboBox comboFilesByOrigin;
         private System.Windows.Forms.CheckBox checkMissing;
         private System.Windows.Forms.Label labelFileOrigin;
+        private System.Windows.Forms.Button buttonCreate;
+        private System.Windows.Forms.Button buttonActivate;
+        private System.Windows.Forms.Button buttonOpen;
     }
 }

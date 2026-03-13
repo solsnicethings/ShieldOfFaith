@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,6 +17,8 @@ namespace Sol.ShieldOfFaith
 {
     public partial class Composure : Form
     {
+        public event EventHandler ShaderChanged, ShaderProfileChanged;
+
         [Flags]
         enum ConfigFunction
         {
@@ -116,6 +120,8 @@ namespace Sol.ShieldOfFaith
         }
 
         ListViewItem[] configFileSysUnfiltered;
+        ConfigFunction GetCfgFunc(ListViewItem item) => (ConfigFunction)item.SubItems[chCfgFunction.Index].Tag;
+        string GetCfgPath(ListViewItem item) => item.SubItems[chCfgPath.Index].Text;
 
         void FilterFileList(ICollection<ConfigFunction> criteria)
         {
@@ -143,7 +149,7 @@ namespace Sol.ShieldOfFaith
                 foreach (var item in configFileSysUnfiltered) {
                     foreach (var f in criteria)
                     {
-                        if ((f & (ConfigFunction)item.SubItems[chCfgFunction.Index].Tag) == 0)
+                        if ((f & GetCfgFunc(item)) == 0)
                         {
                             if ((f & ConfigFunction.Not) == 0) goto filterOut;
                         }
@@ -191,131 +197,136 @@ namespace Sol.ShieldOfFaith
 
         void PopulateFileSystemList()
         {
-            var added = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
-
-            void addfileorsubdir(string fullpath, string rawpath = null, ConfigFunction fnc = 0, FileAttributes attr = 0)
+            configFileSystem.SuspendLayout();
+            try
             {
-                if (attr == 0 && !Program.TryGetFileAttributes(fullpath, out attr))
-                    fnc |= ConfigFunction.Missing;
-                else
+                configFileSystem.Items.Clear();
+                var added = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
+
+                void addfileorsubdir(string fullpath, string rawpath = null, ConfigFunction fnc = 0, FileAttributes attr = 0)
                 {
-                    if ((attr & FileAttributes.Directory) == 0)
-                        fnc |= ConfigFunction.File;
+                    if (attr == 0 && !Program.TryGetFileAttributes(fullpath, out attr))
+                        fnc |= ConfigFunction.Missing;
                     else
                     {
-                        added[fullpath] = addConfigItem(rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath,
-                            fnc | ConfigFunction.Directory, fullpath);
-                        foreach (var c in Program.GetAvailableFilesFromTree(fullpath))
-                            if (!added.ContainsKey(c.Key)) addfileorsubdir(c.Key, null, ConfigFunction.DirectoryContents, c.Value);
-                        return;
-                    }
-                }
-
-                switch (Path.GetExtension(fullpath).ToLowerInvariant())
-                {
-                    case ".cfg":
-                        fnc |= ConfigFunction.Config;
-                        break;
-                    case ".slang":
-                        fnc |= ConfigFunction.Shader;
-                        break;
-                    case ".sgp":
-                        fnc |= ConfigFunction.ShaderProfile;
-                        break;
-                }
-
-                added[fullpath] = addConfigItem(
-                    rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath, fnc, fullpath
-                    );
-            }
-
-            var l = Program.AppDataLocation;
-            {
-                var d = Program.DefaultAppDataLocation;
-
-                if (!string.Equals(d, l, StringComparison.OrdinalIgnoreCase))
-                    added.Add(d, addConfigItem("%AppData%\\..", ConfigFunction.DataDirectory | ConfigFunction.Default, d));
-
-                addConfigItem(Path.GetFileName(l), added.Count == 0 ? ConfigFunction.DataDirectory : ConfigFunction.DataDirectory | ConfigFunction.Active, l);
-
-                d = Program.Settings.LocationOnDisk;
-                if (!string.IsNullOrEmpty(d))
-                {
-                    added[d] = addConfigItem(Path.GetFileName(d), ConfigFunction.Config | ConfigFunction.Active, d);
-
-                    foreach (var s in Program.Settings.IncludedSettingsRequiredIfTrueWithFullPath)
-                    {
-                        if (added.ContainsKey(s.Item3)) continue;
-                        added.Add(s.Item3, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
-                            ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3));
-                    }
-
-                    foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
-                        addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.ExplicitReference : ConfigFunction.ExplicitReference);
-
-                    foreach (var s in Program.Settings.AccumulatedRequiredFiles)
-                        if (added.TryGetValue(s, out var i))
+                        if ((attr & FileAttributes.Directory) == 0)
+                            fnc |= ConfigFunction.File;
+                        else
                         {
-                            var f = (ConfigFunction)i.SubItems[chCfgFunction.Index].Tag;
-                            if ((f & (ConfigFunction.Required | ConfigFunction.File)) == (ConfigFunction.Required | ConfigFunction.File)) continue;
-                            f = (f | ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File) & ~ConfigFunction.Optional;
-                            i.SubItems[chCfgFunction.Index].Text = f.ToString();
+                            added[fullpath] = addConfigItem(rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath,
+                                fnc | ConfigFunction.Directory, fullpath);
+                            foreach (var c in Program.GetAvailableFilesFromTree(fullpath))
+                                if (!added.ContainsKey(c.Key)) addfileorsubdir(c.Key, null, ConfigFunction.DirectoryContents, c.Value);
+                            return;
                         }
-                        else addfileorsubdir(s, fnc: ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File);
-                    foreach (var s in Program.Settings.AccumulatedOptionalFiles)
-                        if (added.TryGetValue(s, out var i))
+                    }
+
+                    switch (Path.GetExtension(fullpath).ToLowerInvariant())
+                    {
+                        case ".cfg":
+                            fnc |= ConfigFunction.Config;
+                            break;
+                        case ".slang":
+                            fnc |= ConfigFunction.Shader;
+                            break;
+                        case ".sgp":
+                            fnc |= ConfigFunction.ShaderProfile;
+                            break;
+                    }
+
+                    added[fullpath] = addConfigItem(
+                        rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath, fnc, fullpath
+                        );
+                }
+
+                var l = Program.AppDataLocation;
+                {
+                    var d = Program.DefaultAppDataLocation;
+
+                    if (!string.Equals(d, l, StringComparison.OrdinalIgnoreCase))
+                        added.Add(d, addConfigItem("%AppData%\\..", ConfigFunction.DataDirectory | ConfigFunction.Default, d));
+
+                    addConfigItem(Path.GetFileName(l), added.Count == 0 ? ConfigFunction.DataDirectory : ConfigFunction.DataDirectory | ConfigFunction.Active, l);
+
+                    d = Program.Settings.LocationOnDisk;
+                    if (!string.IsNullOrEmpty(d))
+                    {
+                        added[d] = addConfigItem(Path.GetFileName(d), ConfigFunction.Config | ConfigFunction.Active, d);
+
+                        foreach (var s in Program.Settings.IncludedSettingsRequiredIfTrueWithFullPath)
                         {
-                            var f = (ConfigFunction)i.SubItems[chCfgFunction.Index].Tag;
-                            switch (f & (ConfigFunction.Required | ConfigFunction.Optional | ConfigFunction.File))
+                            if (added.ContainsKey(s.Item3)) continue;
+                            added.Add(s.Item3, addConfigItem(Path.GetFileName(s.Item1), s.Item2 ?
+                                ConfigFunction.Config | ConfigFunction.Required : ConfigFunction.Config | ConfigFunction.Optional, s.Item3));
+                        }
+
+                        foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
+                            addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.ExplicitReference : ConfigFunction.ExplicitReference);
+
+                        foreach (var s in Program.Settings.AccumulatedRequiredFiles)
+                            if (added.TryGetValue(s, out var i))
                             {
-                                case ConfigFunction.Required | ConfigFunction.File:
-                                    continue;
-                                case ConfigFunction.Optional | ConfigFunction.File:
-                                    continue;
+                                var f = GetCfgFunc(i);
+                                if ((f & (ConfigFunction.Required | ConfigFunction.File)) == (ConfigFunction.Required | ConfigFunction.File)) continue;
+                                f = (f | ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File) & ~ConfigFunction.Optional;
+                                i.SubItems[chCfgFunction.Index].Text = f.ToString();
                             }
-                            f |= ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File;
-                            i.SubItems[chCfgFunction.Index].Text = f.ToString();
-                        }
-                        else addfileorsubdir(s, fnc: ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File);
+                            else addfileorsubdir(s, fnc: ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File);
+                        foreach (var s in Program.Settings.AccumulatedOptionalFiles)
+                            if (added.TryGetValue(s, out var i))
+                            {
+                                var f = GetCfgFunc(i);
+                                switch (f & (ConfigFunction.Required | ConfigFunction.Optional | ConfigFunction.File))
+                                {
+                                    case ConfigFunction.Required | ConfigFunction.File:
+                                        continue;
+                                    case ConfigFunction.Optional | ConfigFunction.File:
+                                        continue;
+                                }
+                                f |= ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File;
+                                i.SubItems[chCfgFunction.Index].Text = f.ToString();
+                            }
+                            else addfileorsubdir(s, fnc: ConfigFunction.Optional | ConfigFunction.Inherited | ConfigFunction.File);
 
+                    }
+
+                    d = Program.ShaderGlassExecutable;
+                    if (d != null)
+                        added[d] = addConfigItem("ShaderGlass.exe", ConfigFunction.ShaderApp, d);
+
+                    d = Program.Settings.ShaderGlassProfile;
+                    if (!string.IsNullOrEmpty(d))
+                    {
+                        var f = Program.FindPathTo(d);
+                        if (f == null)
+                            addConfigItem(Path.GetFileName(d), ConfigFunction.ShaderProfile | ConfigFunction.Active | ConfigFunction.Missing, d);
+                        else
+                            added[f] = addConfigItem(d, ConfigFunction.ShaderProfile | ConfigFunction.Active, f);
+                    }
+
+                    d = Program.Settings.ShaderGlassCustomShader;
+                    if (!string.IsNullOrEmpty(d))
+                    {
+                        var f = Program.FindPathTo(d);
+                        if (f == null)
+                            addConfigItem(Path.GetFileName(d), ConfigFunction.Shader | ConfigFunction.Active | ConfigFunction.Missing, d);
+                        else
+                            added[f] = addConfigItem(d, ConfigFunction.Shader | ConfigFunction.Active, f);
+                    }
                 }
+                if (Directory.Exists(l))
+                    foreach (var e in Directory.GetFileSystemEntries(l))
+                    {
+                        if (added.ContainsKey(e)) continue;
+                        if (Program.TryGetFileAttributes(e, out var attr) == false || 0 != (attr & (FileAttributes.Hidden | FileAttributes.System)))
+                            continue;
+                        addfileorsubdir(e, null, ConfigFunction.DirectoryContents, attr);
+                    }
 
-                d = Program.ShaderGlassExecutable;
-                if (d != null)
-                    added[d] = addConfigItem("ShaderGlass.exe", ConfigFunction.ShaderApp, d);
-
-                d = Program.Settings.ShaderGlassProfile;
-                if (!string.IsNullOrEmpty(d))
-                {
-                    var f = Program.FindPathTo(d);
-                    if (f == null)
-                        addConfigItem(Path.GetFileName(d), ConfigFunction.ShaderProfile | ConfigFunction.Active | ConfigFunction.Missing, d);
-                    else
-                        added[f] = addConfigItem(d, ConfigFunction.ShaderProfile | ConfigFunction.Active, f);
-                }
-
-                d = Program.Settings.ShaderGlassCustomShader;
-                if (!string.IsNullOrEmpty(d))
-                {
-                    var f = Program.FindPathTo(d);
-                    if (f == null)
-                        addConfigItem(Path.GetFileName(d), ConfigFunction.Shader | ConfigFunction.Active | ConfigFunction.Missing, d);
-                    else
-                        added[f] = addConfigItem(d, ConfigFunction.Shader | ConfigFunction.Active, f);
-                }
+                chCfgName.Width = -2;
+                chCfgPath.Width = -2;
             }
-            if (Directory.Exists(l))
-            foreach (var e in Directory.GetFileSystemEntries(l))
-            {
-                if (added.ContainsKey(e)) continue;
-                if (Program.TryGetFileAttributes(e, out var attr) == false || 0 != (attr & (FileAttributes.Hidden | FileAttributes.System)))
-                    continue;
-                addfileorsubdir(e, null, ConfigFunction.DirectoryContents, attr);
-            }
-
-            chCfgName.Width = -2;
-            chCfgPath.Width = -2;
-
+            finally { configFileSystem.ResumeLayout(); }
        }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -446,6 +457,95 @@ namespace Sol.ShieldOfFaith
         private void labelFileOrigin_Click(object sender, EventArgs e)
         {
             comboFilesByOrigin.Focus();
+        }
+
+        private void buttonActivate_Click(object sender, EventArgs e)
+        {
+            var i = configFileSystem.SelectedItems[0];
+            
+            switch (GetCfgFunc(i) & (ConfigFunction.Shader | ConfigFunction.ShaderProfile))
+            {
+                case ConfigFunction.Shader:
+                    Program.Settings.ShaderGlassCustomShader = GetCfgPath(i);
+                    ShaderChanged?.Invoke(this, EventArgs.Empty);
+                    break;
+                default:
+                    Program.Settings.ShaderGlassProfile = GetCfgPath(i);
+                    ShaderProfileChanged?.Invoke(this, EventArgs.Empty);
+                    break;
+            }
+            PopulateFileSystemList();
+        }
+
+        private void buttonOpen_Click(object sender, EventArgs e)
+        {
+            var i = configFileSystem.SelectedItems[0];
+            var p = GetCfgPath(i);
+
+            switch (GetCfgFunc(i) & (ConfigFunction.Directory))
+            {
+                case ConfigFunction.Directory:
+                    try
+                    {
+                        Process.Start(p)?.Dispose();
+                    }
+                    catch (Win32Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Open " + p, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    break;
+                default:
+                    using (var process = new Process())
+                    {
+                        process.StartInfo = new ProcessStartInfo("notepad.exe", "\"" + p + "\"");
+                        process.Start();
+                    }
+                    break;
+            }
+        }
+
+        private void buttonCreate_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void configFileSystem_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (configFileSystem.SelectedItems.Count == 0)
+            {
+                panelFileActions.Enabled = false;
+                return;
+            }
+            panelFileActions.Enabled = true;
+
+            var i = configFileSystem.SelectedItems[0];
+            var f = GetCfgFunc(i);
+
+            bool allow(ConfigFunction require_any) => 0 != (require_any & f);
+            bool require(ConfigFunction require_all) => require_all == (f & require_all);
+            bool forbid(ConfigFunction forbid_all) => 0 == (forbid_all & f);
+            bool filetypes(ConfigFunction filetypes_any)
+            {
+                switch (filetypes_any & f)
+                {
+                    case ConfigFunction.File:
+                    case 0:
+                        return false;
+                }
+                return true;
+            }
+
+            void update(Control target, bool visibility)
+            {
+                target.Visible = visibility;
+                if (visibility) target.BringToFront();
+            }
+
+            update(buttonCreate, require(ConfigFunction.Missing));
+            update(buttonActivate, forbid(ConfigFunction.Active | ConfigFunction.Missing)
+                && filetypes(ConfigFunction.ShaderProfile | ConfigFunction.Shader));
+            update(buttonOpen, forbid(ConfigFunction.Missing) && allow(ConfigFunction.Directory | ConfigFunction.File) &&
+                !GetCfgPath(i).EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

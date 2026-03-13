@@ -32,6 +32,42 @@ namespace Sol.ShieldOfFaith
     {
         public string LocationOnDisk => path;
 
+        public string FindRelative(string path)
+        {
+            var dir = this.path;
+            dir = string.IsNullOrEmpty(dir) ? null : Path.GetDirectoryName(dir);
+            return Program.FindPathTo(path, dir);
+        }
+
+        string MakeRelative(string inpath, params string[] with_paths)
+        {
+            if (!Path.IsPathRooted(inpath)) return inpath;
+            var fullpath = Path.GetFullPath(inpath);
+            string preferred_relative = null;
+
+            foreach (var path in with_paths)
+                if (!string.IsNullOrEmpty(path))
+                {
+                    string dir;
+                    if (path == this.path)
+                    {
+                        dir = Path.GetDirectoryName(path);
+                        preferred_relative = dir;
+                    }
+                    else dir = path;
+                    if (string.IsNullOrEmpty(dir)) continue;
+                    if (dir[dir.Length - 1] != Path.DirectorySeparatorChar) dir += Path.DirectorySeparatorChar;
+                    if (fullpath.StartsWith(dir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var rel = fullpath.Substring(dir.Length);
+                        if (fullpath.Equals(Program.FindPathTo(rel, preferred_relative), StringComparison.OrdinalIgnoreCase))
+                            return rel;
+                        return inpath;
+                    }
+                }
+            return inpath;
+        }
+
         public string[]
             AccumulatedRequiredFiles = new string[0],
             AccumulatedOptionalFiles = new string[0],
@@ -263,7 +299,7 @@ namespace Sol.ShieldOfFaith
                 this[K_extra_settings_file] = l;
                 return l;
             }
-            set { this[K_extra_settings_file] = value == null ? null : new List<string>(value); included = null; }
+            set { this[K_extra_settings_file] = value == null ? null : new List<string>(value.Select(e => MakeRelative(e, path, Program.AppDataLocation))); included = null; }
         }
         /// <summary>
         /// Changes to this setting take effect when you save and then load
@@ -278,7 +314,7 @@ namespace Sol.ShieldOfFaith
                 this[K_optional_settings_file] = l;
                 return l;
             }
-            set { this[K_optional_settings_file] = value == null ? null : new List<string>(value); included = null; }
+            set { this[K_optional_settings_file] = value == null ? null : new List<string>(value.Select(e => MakeRelative(e, path, Program.AppDataLocation))); included = null; }
         }
 
         public string RedirectSettingsFile
@@ -348,19 +384,19 @@ namespace Sol.ShieldOfFaith
         {
             get => TryGetValue(K_GlassExecutable, out var v) && v != null && v.Count > 0 ?
                 v[0] : null;
-            set => Set(K_GlassExecutable, value);
+            set => Set(K_GlassExecutable, MakeRelative( value, Program.GetExecutableContainingFolder()));
         }
         public string ShaderGlassProfile
         {
             get => TryGetValue(K_GlassProfile, out var v) && v != null && v.Count > 0 ?
                 v[0] : null;
-            set => Set(K_GlassProfile, value);
+            set => Set(K_GlassProfile,  MakeRelative(value, path, Program.AppDataLocation));
         }
         public string ShaderGlassCustomShader
         {
             get => TryGetValue(K_GlassCustomShader, out var v) && v != null && v.Count > 0 ?
                 v[0] : null;
-            set => Set(K_GlassCustomShader, value);
+            set => Set(K_GlassCustomShader, MakeRelative(value, path, Program.AppDataLocation));
         }
 
         public byte ShieldIntensity

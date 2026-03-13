@@ -118,6 +118,7 @@
     <EmbeddedResource Include="Shield.resx">
       <DependentUpon>Shield.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="Files\Catalog expanded\Deployable\AppData\Complex.slang" />
     <None Include="Files\Catalog expanded\Deployable\AppData\Simple.slang" />
     <None Include="Files\Catalog expanded\Deployable\AppData\ShieldOfFaith.sgp" />
     <None Include="Files\Catalog expanded\Deployable\AppData\ShieldOfFaith.slang" />
