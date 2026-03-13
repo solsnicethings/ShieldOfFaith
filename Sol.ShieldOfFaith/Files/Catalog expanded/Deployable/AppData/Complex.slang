@@ -44,7 +44,7 @@ layout(push_constant) uniform Push
 #pragma parameter DesaturateLayer "DesaturateLayer" 6.0 0.9 7.1 1.0
 
 #pragma parameter LowEndPreservationPeak "LowEndPreservationVolume" 0.0 0.0 1.0 0.005
-#pragma parameter LowEndPreservationVolume "LowEndPreservationVolume" 0.0 0.0 1.5 0.002
+#pragma parameter LowEndPreservationVolume "LowEndPreservationVolume" 0.0 0.0 3.0 0.002
 #pragma parameter PreserveLayer "PreserveLayer" 1.0 0.9 7.1 1.0
 
 layout(std140, set = 0, binding = 0) uniform UBO
@@ -112,7 +112,7 @@ void main()
 
         int divby = 0;
 
-        if (to_tint && layer > 3.0) {
+        if (to_tint && layer > 4.0) {
             to_tint = false;
             im += input_pixel * (1 - params.TintIntensity) +
                 vec3(input_pixel.r * params.TintRed, input_pixel.g * params.TintGreen, input_pixel.b * params.TintBlue) * params.TintIntensity;
