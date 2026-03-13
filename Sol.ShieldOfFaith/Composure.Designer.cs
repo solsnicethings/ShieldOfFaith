@@ -38,6 +38,14 @@
             this.chCfgPath = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.panel2 = new System.Windows.Forms.Panel();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.comboFilesByOrigin = new System.Windows.Forms.ComboBox();
+            this.radioShowNoFiles = new System.Windows.Forms.RadioButton();
+            this.radioOtherfiles = new System.Windows.Forms.RadioButton();
+            this.radioShadioProfilo = new System.Windows.Forms.RadioButton();
+            this.radioShadio = new System.Windows.Forms.RadioButton();
+            this.radioShowConfigs = new System.Windows.Forms.RadioButton();
+            this.radioShowFiles = new System.Windows.Forms.RadioButton();
+            this.checkShowDirs = new System.Windows.Forms.CheckBox();
             this.tabSession = new System.Windows.Forms.TabPage();
             this.panel1 = new System.Windows.Forms.Panel();
             this.buttonClearTrace = new System.Windows.Forms.Button();
@@ -48,8 +56,12 @@
             this.tabHelp = new System.Windows.Forms.TabPage();
             this.helpTextBox = new System.Windows.Forms.RichTextBox();
             this.tabHelpSelector = new System.Windows.Forms.TabControl();
+            this.checkMissing = new System.Windows.Forms.CheckBox();
+            this.labelFileOrigin = new System.Windows.Forms.Label();
             this.Tabs.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.panel3.SuspendLayout();
             this.tabSession.SuspendLayout();
             this.panel1.SuspendLayout();
             this.tabHelp.SuspendLayout();
@@ -131,7 +143,9 @@
             // 
             // panel2
             // 
+            this.panel2.Controls.Add(this.labelFileOrigin);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.panel2.Location = new System.Drawing.Point(538, 3);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(104, 359);
@@ -139,11 +153,115 @@
             // 
             // panel3
             // 
+            this.panel3.Controls.Add(this.comboFilesByOrigin);
+            this.panel3.Controls.Add(this.checkMissing);
+            this.panel3.Controls.Add(this.radioShowNoFiles);
+            this.panel3.Controls.Add(this.radioOtherfiles);
+            this.panel3.Controls.Add(this.radioShadioProfilo);
+            this.panel3.Controls.Add(this.radioShadio);
+            this.panel3.Controls.Add(this.radioShowConfigs);
+            this.panel3.Controls.Add(this.radioShowFiles);
+            this.panel3.Controls.Add(this.checkShowDirs);
             this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel3.Font = new System.Drawing.Font("Consolas", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.panel3.ForeColor = System.Drawing.Color.WhiteSmoke;
             this.panel3.Location = new System.Drawing.Point(4, 362);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(638, 66);
             this.panel3.TabIndex = 2;
+            // 
+            // comboFilesByOrigin
+            // 
+            this.comboFilesByOrigin.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboFilesByOrigin.FormattingEnabled = true;
+            this.comboFilesByOrigin.Items.AddRange(new object[] {
+            "Any"});
+            this.comboFilesByOrigin.Location = new System.Drawing.Point(413, 5);
+            this.comboFilesByOrigin.Name = "comboFilesByOrigin";
+            this.comboFilesByOrigin.Size = new System.Drawing.Size(221, 30);
+            this.comboFilesByOrigin.TabIndex = 8;
+            this.comboFilesByOrigin.SelectedIndexChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioShowNoFiles
+            // 
+            this.radioShowNoFiles.AutoSize = true;
+            this.radioShowNoFiles.Location = new System.Drawing.Point(339, 6);
+            this.radioShowNoFiles.Name = "radioShowNoFiles";
+            this.radioShowNoFiles.Size = new System.Drawing.Size(68, 26);
+            this.radioShowNoFiles.TabIndex = 6;
+            this.radioShowNoFiles.Text = "&None";
+            this.radioShowNoFiles.UseVisualStyleBackColor = true;
+            this.radioShowNoFiles.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioOtherfiles
+            // 
+            this.radioOtherfiles.AutoSize = true;
+            this.radioOtherfiles.Location = new System.Drawing.Point(554, 34);
+            this.radioOtherfiles.Name = "radioOtherfiles";
+            this.radioOtherfiles.Size = new System.Drawing.Size(88, 26);
+            this.radioOtherfiles.TabIndex = 5;
+            this.radioOtherfiles.Text = " &Other";
+            this.radioOtherfiles.UseVisualStyleBackColor = true;
+            this.radioOtherfiles.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioShadioProfilo
+            // 
+            this.radioShadioProfilo.AutoSize = true;
+            this.radioShadioProfilo.Location = new System.Drawing.Point(391, 34);
+            this.radioShadioProfilo.Name = "radioShadioProfilo";
+            this.radioShadioProfilo.Size = new System.Drawing.Size(158, 26);
+            this.radioShadioProfilo.TabIndex = 4;
+            this.radioShadioProfilo.Text = "&Glass profile";
+            this.radioShadioProfilo.UseVisualStyleBackColor = true;
+            this.radioShadioProfilo.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioShadio
+            // 
+            this.radioShadio.AutoSize = true;
+            this.radioShadio.Location = new System.Drawing.Point(297, 34);
+            this.radioShadio.Name = "radioShadio";
+            this.radioShadio.Size = new System.Drawing.Size(88, 26);
+            this.radioShadio.TabIndex = 3;
+            this.radioShadio.Text = "&Shader";
+            this.radioShadio.UseVisualStyleBackColor = true;
+            this.radioShadio.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioShowConfigs
+            // 
+            this.radioShowConfigs.AutoSize = true;
+            this.radioShowConfigs.Location = new System.Drawing.Point(203, 34);
+            this.radioShowConfigs.Name = "radioShowConfigs";
+            this.radioShowConfigs.Size = new System.Drawing.Size(88, 26);
+            this.radioShowConfigs.TabIndex = 2;
+            this.radioShowConfigs.Text = "&Config";
+            this.radioShowConfigs.UseVisualStyleBackColor = true;
+            this.radioShowConfigs.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // radioShowFiles
+            // 
+            this.radioShowFiles.AutoSize = true;
+            this.radioShowFiles.Checked = true;
+            this.radioShowFiles.Location = new System.Drawing.Point(203, 6);
+            this.radioShowFiles.Name = "radioShowFiles";
+            this.radioShowFiles.Size = new System.Drawing.Size(138, 26);
+            this.radioShowFiles.TabIndex = 1;
+            this.radioShowFiles.TabStop = true;
+            this.radioShowFiles.Text = "Show &files:";
+            this.radioShowFiles.UseVisualStyleBackColor = true;
+            this.radioShowFiles.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // checkShowDirs
+            // 
+            this.checkShowDirs.AutoSize = true;
+            this.checkShowDirs.Checked = true;
+            this.checkShowDirs.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkShowDirs.Location = new System.Drawing.Point(4, 6);
+            this.checkShowDirs.Name = "checkShowDirs";
+            this.checkShowDirs.Size = new System.Drawing.Size(189, 26);
+            this.checkShowDirs.TabIndex = 0;
+            this.checkShowDirs.Text = "Show &Directories";
+            this.checkShowDirs.UseVisualStyleBackColor = true;
+            this.checkShowDirs.CheckedChanged += new System.EventHandler(this.filelistfilter_Changed);
             // 
             // tabSession
             // 
@@ -271,6 +389,32 @@
             this.tabHelpSelector.TabIndex = 3;
             this.tabHelpSelector.SelectedIndexChanged += new System.EventHandler(this.tabHelpSelector_SelectedIndexChanged);
             // 
+            // checkMissing
+            // 
+            this.checkMissing.AutoSize = true;
+            this.checkMissing.Checked = true;
+            this.checkMissing.CheckState = System.Windows.Forms.CheckState.Indeterminate;
+            this.checkMissing.Location = new System.Drawing.Point(4, 35);
+            this.checkMissing.Name = "checkMissing";
+            this.checkMissing.Size = new System.Drawing.Size(99, 26);
+            this.checkMissing.TabIndex = 9;
+            this.checkMissing.Text = "&Missing";
+            this.checkMissing.ThreeState = true;
+            this.checkMissing.UseVisualStyleBackColor = true;
+            this.checkMissing.CheckStateChanged += new System.EventHandler(this.filelistfilter_Changed);
+            // 
+            // labelFileOrigin
+            // 
+            this.labelFileOrigin.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.labelFileOrigin.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelFileOrigin.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.labelFileOrigin.Location = new System.Drawing.Point(0, 320);
+            this.labelFileOrigin.Name = "labelFileOrigin";
+            this.labelFileOrigin.Size = new System.Drawing.Size(104, 39);
+            this.labelFileOrigin.TabIndex = 8;
+            this.labelFileOrigin.Text = "File o&rigin:";
+            this.labelFileOrigin.Click += new System.EventHandler(this.labelFileOrigin_Click);
+            // 
             // Composure
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 14F);
@@ -287,6 +431,9 @@
             this.Text = "Composure (Shield of Faith configuration window)";
             this.Tabs.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
+            this.panel2.ResumeLayout(false);
+            this.panel3.ResumeLayout(false);
+            this.panel3.PerformLayout();
             this.tabSession.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
@@ -315,5 +462,15 @@
         private System.Windows.Forms.ColumnHeader chCfgFunction;
         private System.Windows.Forms.ColumnHeader chCfgPath;
         private System.Windows.Forms.Panel panel3;
+        private System.Windows.Forms.RadioButton radioShowFiles;
+        private System.Windows.Forms.CheckBox checkShowDirs;
+        private System.Windows.Forms.RadioButton radioShowNoFiles;
+        private System.Windows.Forms.RadioButton radioOtherfiles;
+        private System.Windows.Forms.RadioButton radioShadioProfilo;
+        private System.Windows.Forms.RadioButton radioShadio;
+        private System.Windows.Forms.RadioButton radioShowConfigs;
+        private System.Windows.Forms.ComboBox comboFilesByOrigin;
+        private System.Windows.Forms.CheckBox checkMissing;
+        private System.Windows.Forms.Label labelFileOrigin;
     }
 }

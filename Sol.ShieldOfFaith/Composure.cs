@@ -26,17 +26,20 @@ namespace Sol.ShieldOfFaith
             Active = 0x8,
 
             Missing = unchecked((int)0x80000000),
+            Not = 0x40000000,
 
-            Referenced = 0x10,
+            ExplicitReference = 0x10,
             Optional = 0x20,
             Required = 0x40,
             Inherited = 0x80,
 
             DataDirectory = 0x100| Directory,
             Config = 0x200 | File,
-            Shader = 0x300 | File,
-            ShaderProfile = 0x400 | File,
-            ShaderApp = 0x500 | File,
+            Shader = 0x400 | File,
+            ShaderProfile = 0x800 | File,
+            ShaderApp = 0x1000 | File,
+
+            DirectoryContents = 02000
         }
 
         void ResetSessionInfo()
@@ -72,6 +75,12 @@ namespace Sol.ShieldOfFaith
                 }
             }
 
+            comboFilesByOrigin.SelectedIndex = 0;
+            comboFilesByOrigin.Items.Add(ConfigFunction.DirectoryContents);
+            comboFilesByOrigin.Items.Add(ConfigFunction.ExplicitReference);
+            comboFilesByOrigin.Items.Add(ConfigFunction.Inherited);
+            comboFilesByOrigin.Items.Add(ConfigFunction.Not | ConfigFunction.Inherited);
+
             Output("Event trace", null);
         }
 
@@ -106,6 +115,50 @@ namespace Sol.ShieldOfFaith
             PopulateFileSystemList();
         }
 
+        ListViewItem[] configFileSysUnfiltered;
+
+        void FilterFileList(ICollection<ConfigFunction> criteria)
+        {
+            configFileSystem.SuspendLayout();
+            try
+            {
+                if (criteria.Count == 0)
+                {
+                    if (configFileSysUnfiltered != null)
+                    {
+                        configFileSystem.Items.Clear();
+                        configFileSystem.Items.AddRange(configFileSysUnfiltered);
+                        configFileSysUnfiltered = null;
+                    }
+                    return;
+                }
+
+                if (configFileSysUnfiltered == null)
+                {
+                    configFileSysUnfiltered = new ListViewItem[configFileSystem.Items.Count];
+                    configFileSystem.Items.CopyTo(configFileSysUnfiltered, 0);
+                }
+
+                configFileSystem.Items.Clear();
+                foreach (var item in configFileSysUnfiltered) {
+                    foreach (var f in criteria)
+                    {
+                        if ((f & (ConfigFunction)item.SubItems[chCfgFunction.Index].Tag) == 0)
+                        {
+                            if ((f & ConfigFunction.Not) == 0) goto filterOut;
+                        }
+                        else
+                        {
+                            if ((f & ConfigFunction.Not) == ConfigFunction.Not) goto filterOut;
+                        }
+                    }
+                    configFileSystem.Items.Add(item);
+                    filterOut:;
+                }
+            }
+            finally {  configFileSystem.ResumeLayout(); }
+        }
+
         ListViewItem addConfigItem(string name, ConfigFunction function, string path)
         {
             var s = new string[4];
@@ -132,6 +185,7 @@ namespace Sol.ShieldOfFaith
 
             ListViewItem i;
             configFileSystem.Items.Add(i = new ListViewItem(s));
+            i.SubItems[chCfgFunction.Index].Tag = function;
             return i;
         }
 
@@ -152,7 +206,7 @@ namespace Sol.ShieldOfFaith
                         added[fullpath] = addConfigItem(rawpath == null || rawpath == fullpath ? Path.GetFileName(fullpath) : rawpath,
                             fnc | ConfigFunction.Directory, fullpath);
                         foreach (var c in Program.GetAvailableFilesFromTree(fullpath))
-                            if (!added.ContainsKey(c.Key)) addfileorsubdir(c.Key, attr: c.Value);
+                            if (!added.ContainsKey(c.Key)) addfileorsubdir(c.Key, null, ConfigFunction.DirectoryContents, c.Value);
                         return;
                     }
                 }
@@ -197,19 +251,21 @@ namespace Sol.ShieldOfFaith
                     }
 
                     foreach (var f in Program.Settings.ResourcePaths_valueShowsDirectSpecification)
-                        addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.Referenced : ConfigFunction.Referenced);
+                        addfileorsubdir(f.Key, f.Value, f.Value == null ? ConfigFunction.Inherited | ConfigFunction.ExplicitReference : ConfigFunction.ExplicitReference);
 
                     foreach (var s in Program.Settings.AccumulatedRequiredFiles)
-                        if (added.TryGetValue(s, out var i) && Enum.TryParse<ConfigFunction>(i.SubItems[chCfgFunction.Index].Text, out var f))
+                        if (added.TryGetValue(s, out var i))
                         {
+                            var f = (ConfigFunction)i.SubItems[chCfgFunction.Index].Tag;
                             if ((f & (ConfigFunction.Required | ConfigFunction.File)) == (ConfigFunction.Required | ConfigFunction.File)) continue;
                             f = (f | ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File) & ~ConfigFunction.Optional;
                             i.SubItems[chCfgFunction.Index].Text = f.ToString();
                         }
                         else addfileorsubdir(s, fnc: ConfigFunction.Required | ConfigFunction.Inherited | ConfigFunction.File);
                     foreach (var s in Program.Settings.AccumulatedOptionalFiles)
-                        if (added.TryGetValue(s, out var i) && Enum.TryParse<ConfigFunction>(i.SubItems[chCfgFunction.Index].Text, out var f))
+                        if (added.TryGetValue(s, out var i))
                         {
+                            var f = (ConfigFunction)i.SubItems[chCfgFunction.Index].Tag;
                             switch (f & (ConfigFunction.Required | ConfigFunction.Optional | ConfigFunction.File))
                             {
                                 case ConfigFunction.Required | ConfigFunction.File:
@@ -254,12 +310,13 @@ namespace Sol.ShieldOfFaith
                 if (added.ContainsKey(e)) continue;
                 if (Program.TryGetFileAttributes(e, out var attr) == false || 0 != (attr & (FileAttributes.Hidden | FileAttributes.System)))
                     continue;
-                addfileorsubdir(e, attr: attr);
+                addfileorsubdir(e, null, ConfigFunction.DirectoryContents, attr);
             }
 
             chCfgName.Width = -2;
             chCfgPath.Width = -2;
-        }
+
+       }
 
         protected override void OnVisibleChanged(EventArgs e)
         {
@@ -337,6 +394,58 @@ namespace Sol.ShieldOfFaith
             helpTextBox.Rtf = ((ZipArchiveEntry)tabHelpSelector.SelectedTab.Tag).Read();
             helpTextBox.Select(0, 0);
             helpTextBox.ScrollToCaret();
+        }
+
+        private void filelistfilter_Changed(object sender, EventArgs e)
+        {
+            ConfigFunction filter_no = 0;
+            var filters = new List<ConfigFunction>();
+
+            void apply(ConfigFunction filter)
+            {
+                if ((filter & ConfigFunction.Not) == 0) 
+                {
+                    if (checkShowDirs.Checked)
+                        filter |= ConfigFunction.Directory;
+                    filters.Add(filter);
+                }
+                else filter_no |= filter;
+            }
+
+            {
+                if (comboFilesByOrigin.SelectedItem is ConfigFunction filter)
+                    apply(filter);
+            }
+
+            if (!checkShowDirs.Checked) apply(ConfigFunction.Directory | ConfigFunction.Not);
+
+            if (radioOtherfiles.Checked) apply(
+                (ConfigFunction.Not | ConfigFunction.Config | ConfigFunction.Shader | ConfigFunction.ShaderProfile | ConfigFunction.ShaderApp)
+                & ~ConfigFunction.File);
+
+            else if (radioShadio.Checked) apply((ConfigFunction.Shader | ConfigFunction.ShaderApp) & ~ConfigFunction.File);
+            else if (radioShadioProfilo.Checked) apply((ConfigFunction.ShaderProfile | ConfigFunction.ShaderApp) & ~ConfigFunction.File);
+
+            else if (radioShowConfigs.Checked) apply((ConfigFunction.Config) & ~ConfigFunction.File);
+            else if (radioShowNoFiles.Checked) apply(ConfigFunction.Not | ConfigFunction.File);
+
+            switch (checkMissing.CheckState)
+            {
+                case CheckState.Checked:
+                    filters.Add(ConfigFunction.Missing);
+                    break;
+                case CheckState.Unchecked:
+                    filter_no |= ConfigFunction.Not | ConfigFunction.Missing;
+                    break;
+            }
+
+            if (filter_no != 0) filters.Add(filter_no);
+            FilterFileList(filters);
+        }
+
+        private void labelFileOrigin_Click(object sender, EventArgs e)
+        {
+            comboFilesByOrigin.Focus();
         }
     }
 }
