@@ -121,7 +121,7 @@ void main()
 
         if (to_dim && layer > params.DimLayer) {
             to_dim = false;
-            im += (1 - sqrt(1 - input_pixel)) * params.DimIntensity + input_pixel * (1 - params.DimIntensity);
+            im += (input_pixel - input_pixel * input_pixel / 2) * params.DimIntensity + input_pixel * (1 - params.DimIntensity);
             divby += 1;
         }
 
