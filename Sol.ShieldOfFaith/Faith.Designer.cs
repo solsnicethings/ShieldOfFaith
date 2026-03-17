@@ -35,41 +35,41 @@
             this.labelTitle = new System.Windows.Forms.Label();
             this.buttonMinimize = new System.Windows.Forms.Button();
             this.buttonClose = new System.Windows.Forms.Button();
+            this.toggleButtonGlass = new Sol.ShieldOfFaith.ButtonToggle();
+            this.toggleButtonShield = new Sol.ShieldOfFaith.ButtonToggle();
             this.buttonHelp = new System.Windows.Forms.Button();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.panel3 = new System.Windows.Forms.Panel();
-            this.panel4 = new System.Windows.Forms.Panel();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.labelTooltip = new System.Windows.Forms.Label();
             this.protectorShield = new Sol.ShieldOfFaith.ProtectorPanel();
             this.flowLayoutShield = new System.Windows.Forms.FlowLayoutPanel();
             this.containerIntensityLimit = new System.Windows.Forms.GroupBox();
             this.inputIntensityLimit = new Sol.ShieldOfFaith.NumericTextBox();
             this.buttonPickMonitor = new System.Windows.Forms.Button();
             this.colourManagerShield = new Sol.ShieldOfFaith.ColourManager();
+            this.panel3 = new System.Windows.Forms.Panel();
             this.buttonShieldControls = new Sol.ShieldOfFaith.ButtonToggle();
             this.protectorGlass = new Sol.ShieldOfFaith.ProtectorPanel();
             this.flowLayoutGlass = new System.Windows.Forms.FlowLayoutPanel();
             this.buttonBreakGlass = new System.Windows.Forms.Button();
             this.toggleGlassWindow = new Sol.ShieldOfFaith.ButtonToggle();
             this.buttonRefresh = new Sol.ShieldOfFaith.ButtonToggle();
+            this.panel4 = new System.Windows.Forms.Panel();
             this.buttonGlassControls = new Sol.ShieldOfFaith.ButtonToggle();
-            this.toggleButtonGlass = new Sol.ShieldOfFaith.ButtonToggle();
-            this.toggleButtonShield = new Sol.ShieldOfFaith.ButtonToggle();
+            this.panel2 = new System.Windows.Forms.Panel();
             this.buttonEmergencyClose = new System.Windows.Forms.Button();
+            this.labelTooltip = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.panel3.SuspendLayout();
-            this.panel4.SuspendLayout();
-            this.panel2.SuspendLayout();
             this.protectorShield.SuspendLayout();
             this.flowLayoutShield.SuspendLayout();
             this.containerIntensityLimit.SuspendLayout();
+            this.panel3.SuspendLayout();
             this.protectorGlass.SuspendLayout();
             this.flowLayoutGlass.SuspendLayout();
+            this.panel4.SuspendLayout();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // openFileDialog1
@@ -146,6 +146,62 @@
             this.buttonClose.UseVisualStyleBackColor = false;
             this.buttonClose.Click += new System.EventHandler(this.buttonClose_Click);
             // 
+            // toggleButtonGlass
+            // 
+            this.toggleButtonGlass.AccessibleName = "Toggle screen shader app";
+            this.toggleButtonGlass.AutoEllipsis = false;
+            this.toggleButtonGlass.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.toggleButtonGlass.DialogResult = System.Windows.Forms.DialogResult.None;
+            this.toggleButtonGlass.DisabledColorBlend = System.Drawing.Color.Empty;
+            this.toggleButtonGlass.Dock = System.Windows.Forms.DockStyle.Left;
+            this.toggleButtonGlass.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+            this.toggleButtonGlass.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
+            this.toggleButtonGlass.Image = null;
+            this.toggleButtonGlass.ImageAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toggleButtonGlass.ImageIndex = -1;
+            this.toggleButtonGlass.ImageKey = "";
+            this.toggleButtonGlass.ImageList = null;
+            this.toggleButtonGlass.Location = new System.Drawing.Point(221, 0);
+            this.toggleButtonGlass.Name = "toggleButtonGlass";
+            this.toggleButtonGlass.Size = new System.Drawing.Size(88, 49);
+            this.toggleButtonGlass.TabIndex = 11;
+            this.toggleButtonGlass.Text = "Shader Glass app";
+            this.toggleButtonGlass.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toggleButtonGlass.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
+            this.toggleButtonGlass.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.toggleButtonGlass.ToggledForeColour = System.Drawing.Color.Transparent;
+            this.toggleButtonGlass.ToggledOn = false;
+            this.toggleButtonGlass.UseVisualStyleBackColor = false;
+            this.toggleButtonGlass.Toggled += new System.EventHandler(this.toggleButtonGlass_Toggled);
+            // 
+            // toggleButtonShield
+            // 
+            this.toggleButtonShield.AccessibleName = "Toggle translucent screen covering";
+            this.toggleButtonShield.AutoEllipsis = false;
+            this.toggleButtonShield.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("toggleButtonShield.BackgroundImage")));
+            this.toggleButtonShield.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.toggleButtonShield.DialogResult = System.Windows.Forms.DialogResult.None;
+            this.toggleButtonShield.DisabledColorBlend = System.Drawing.Color.Empty;
+            this.toggleButtonShield.Dock = System.Windows.Forms.DockStyle.Left;
+            this.toggleButtonShield.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
+            this.toggleButtonShield.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(170)))), ((int)(((byte)(170)))), ((int)(((byte)(0)))));
+            this.toggleButtonShield.Image = null;
+            this.toggleButtonShield.ImageAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toggleButtonShield.ImageIndex = -1;
+            this.toggleButtonShield.ImageKey = "";
+            this.toggleButtonShield.ImageList = null;
+            this.toggleButtonShield.Location = new System.Drawing.Point(140, 0);
+            this.toggleButtonShield.Name = "toggleButtonShield";
+            this.toggleButtonShield.Size = new System.Drawing.Size(81, 49);
+            this.toggleButtonShield.TabIndex = 10;
+            this.toggleButtonShield.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.toggleButtonShield.TextImageRelation = System.Windows.Forms.TextImageRelation.TextAboveImage;
+            this.toggleButtonShield.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.toggleButtonShield.ToggledForeColour = System.Drawing.Color.Transparent;
+            this.toggleButtonShield.ToggledOn = false;
+            this.toggleButtonShield.UseVisualStyleBackColor = false;
+            this.toggleButtonShield.Toggled += new System.EventHandler(this.toggleButtonShield_Toggled);
+            // 
             // buttonHelp
             // 
             this.buttonHelp.Dock = System.Windows.Forms.DockStyle.Left;
@@ -172,48 +228,9 @@
             // 
             this.splitContainer1.Panel2.Controls.Add(this.protectorGlass);
             this.splitContainer1.Panel2.Controls.Add(this.panel4);
-            this.splitContainer1.Size = new System.Drawing.Size(505, 238);
+            this.splitContainer1.Size = new System.Drawing.Size(505, 258);
             this.splitContainer1.SplitterDistance = 257;
             this.splitContainer1.TabIndex = 10;
-            // 
-            // panel3
-            // 
-            this.panel3.Controls.Add(this.buttonShieldControls);
-            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel3.Location = new System.Drawing.Point(0, 217);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(257, 21);
-            this.panel3.TabIndex = 9;
-            // 
-            // panel4
-            // 
-            this.panel4.Controls.Add(this.buttonGlassControls);
-            this.panel4.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel4.Location = new System.Drawing.Point(0, 217);
-            this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(244, 21);
-            this.panel4.TabIndex = 10;
-            // 
-            // panel2
-            // 
-            this.panel2.Controls.Add(this.buttonEmergencyClose);
-            this.panel2.Controls.Add(this.labelTooltip);
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel2.Location = new System.Drawing.Point(0, 287);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(505, 27);
-            this.panel2.TabIndex = 11;
-            // 
-            // labelTooltip
-            // 
-            this.labelTooltip.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(59)))), ((int)(((byte)(59)))), ((int)(((byte)(59)))));
-            this.labelTooltip.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.labelTooltip.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelTooltip.Location = new System.Drawing.Point(0, 0);
-            this.labelTooltip.Name = "labelTooltip";
-            this.labelTooltip.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
-            this.labelTooltip.Size = new System.Drawing.Size(505, 27);
-            this.labelTooltip.TabIndex = 0;
             // 
             // protectorShield
             // 
@@ -236,7 +253,7 @@
             this.protectorShield.HeaderImage = null;
             this.protectorShield.Location = new System.Drawing.Point(0, 0);
             this.protectorShield.Name = "protectorShield";
-            this.protectorShield.Size = new System.Drawing.Size(257, 217);
+            this.protectorShield.Size = new System.Drawing.Size(257, 237);
             this.protectorShield.TabIndex = 8;
             // 
             // flowLayoutShield
@@ -246,7 +263,7 @@
             this.flowLayoutShield.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutShield.Location = new System.Drawing.Point(0, 148);
             this.flowLayoutShield.Name = "flowLayoutShield";
-            this.flowLayoutShield.Size = new System.Drawing.Size(255, 67);
+            this.flowLayoutShield.Size = new System.Drawing.Size(255, 87);
             this.flowLayoutShield.TabIndex = 11;
             // 
             // containerIntensityLimit
@@ -304,9 +321,9 @@
             this.colourManagerShield.BarAlpha.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarAlpha.LowValueColor = System.Drawing.Color.Transparent;
             this.colourManagerShield.BarAlpha.Margin = new System.Windows.Forms.Padding(0);
-            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(112, 48);
+            this.colourManagerShield.BarAlpha.MinimumSize = new System.Drawing.Size(168, 74);
             this.colourManagerShield.BarAlpha.Name = "trackBoxAlpha";
-            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(255, 48);
+            this.colourManagerShield.BarAlpha.Size = new System.Drawing.Size(255, 74);
             this.colourManagerShield.BarAlpha.TabIndex = 4;
             this.colourManagerShield.BarAlpha.Text = "intensity: ";
             this.colourManagerShield.BarAlpha.Value = 255;
@@ -322,9 +339,9 @@
             this.colourManagerShield.BarBlue.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarBlue.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
             this.colourManagerShield.BarBlue.Margin = new System.Windows.Forms.Padding(0);
-            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(112, 48);
+            this.colourManagerShield.BarBlue.MinimumSize = new System.Drawing.Size(168, 74);
             this.colourManagerShield.BarBlue.Name = "trackB";
-            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 48);
+            this.colourManagerShield.BarBlue.Size = new System.Drawing.Size(312, 74);
             this.colourManagerShield.BarBlue.TabIndex = 3;
             this.colourManagerShield.BarBlue.Text = "blue : ";
             this.colourManagerShield.BarBlue.ValueToStringOverride = null;
@@ -341,9 +358,9 @@
             this.colourManagerShield.BarGreen.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarGreen.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
             this.colourManagerShield.BarGreen.Margin = new System.Windows.Forms.Padding(0);
-            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(112, 48);
+            this.colourManagerShield.BarGreen.MinimumSize = new System.Drawing.Size(168, 74);
             this.colourManagerShield.BarGreen.Name = "trackG";
-            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 48);
+            this.colourManagerShield.BarGreen.Size = new System.Drawing.Size(312, 74);
             this.colourManagerShield.BarGreen.TabIndex = 2;
             this.colourManagerShield.BarGreen.Text = "green : ";
             this.colourManagerShield.BarGreen.ValueToStringOverride = null;
@@ -359,9 +376,9 @@
             this.colourManagerShield.BarRed.Location = new System.Drawing.Point(0, 0);
             this.colourManagerShield.BarRed.LowValueColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.colourManagerShield.BarRed.Margin = new System.Windows.Forms.Padding(0);
-            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(112, 48);
+            this.colourManagerShield.BarRed.MinimumSize = new System.Drawing.Size(168, 74);
             this.colourManagerShield.BarRed.Name = "trackR";
-            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 48);
+            this.colourManagerShield.BarRed.Size = new System.Drawing.Size(312, 74);
             this.colourManagerShield.BarRed.TabIndex = 1;
             this.colourManagerShield.BarRed.Text = "red  :  ";
             this.colourManagerShield.BarRed.ValueToStringOverride = null;
@@ -377,6 +394,15 @@
             this.colourManagerShield.TabIndex = 9;
             this.colourManagerShield.Value = System.Drawing.Color.Gray;
             this.colourManagerShield.ValueChanged += new System.EventHandler(this.colourManagerShield_ValueChanged);
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.buttonShieldControls);
+            this.panel3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel3.Location = new System.Drawing.Point(0, 237);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(257, 21);
+            this.panel3.TabIndex = 9;
             // 
             // buttonShieldControls
             // 
@@ -425,7 +451,7 @@
             this.protectorGlass.HeaderImage = null;
             this.protectorGlass.Location = new System.Drawing.Point(0, 0);
             this.protectorGlass.Name = "protectorGlass";
-            this.protectorGlass.Size = new System.Drawing.Size(244, 217);
+            this.protectorGlass.Size = new System.Drawing.Size(244, 237);
             this.protectorGlass.TabIndex = 9;
             // 
             // flowLayoutGlass
@@ -436,7 +462,7 @@
             this.flowLayoutGlass.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutGlass.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutGlass.Name = "flowLayoutGlass";
-            this.flowLayoutGlass.Size = new System.Drawing.Size(242, 215);
+            this.flowLayoutGlass.Size = new System.Drawing.Size(242, 235);
             this.flowLayoutGlass.TabIndex = 1;
             // 
             // buttonBreakGlass
@@ -499,6 +525,15 @@
             this.buttonRefresh.Visible = false;
             this.buttonRefresh.Toggled += new System.EventHandler(this.buttonRefresh_Toggled);
             // 
+            // panel4
+            // 
+            this.panel4.Controls.Add(this.buttonGlassControls);
+            this.panel4.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel4.Location = new System.Drawing.Point(0, 237);
+            this.panel4.Name = "panel4";
+            this.panel4.Size = new System.Drawing.Size(244, 21);
+            this.panel4.TabIndex = 10;
+            // 
             // buttonGlassControls
             // 
             this.buttonGlassControls.AutoEllipsis = false;
@@ -525,61 +560,15 @@
             this.buttonGlassControls.UseVisualStyleBackColor = false;
             this.buttonGlassControls.Toggled += new System.EventHandler(this.buttonGlassControls_Toggled);
             // 
-            // toggleButtonGlass
+            // panel2
             // 
-            this.toggleButtonGlass.AccessibleName = "Toggle screen shader app";
-            this.toggleButtonGlass.AutoEllipsis = false;
-            this.toggleButtonGlass.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.toggleButtonGlass.DialogResult = System.Windows.Forms.DialogResult.None;
-            this.toggleButtonGlass.DisabledColorBlend = System.Drawing.Color.Empty;
-            this.toggleButtonGlass.Dock = System.Windows.Forms.DockStyle.Left;
-            this.toggleButtonGlass.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
-            this.toggleButtonGlass.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.toggleButtonGlass.Image = null;
-            this.toggleButtonGlass.ImageAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.toggleButtonGlass.ImageIndex = -1;
-            this.toggleButtonGlass.ImageKey = "";
-            this.toggleButtonGlass.ImageList = null;
-            this.toggleButtonGlass.Location = new System.Drawing.Point(221, 0);
-            this.toggleButtonGlass.Name = "toggleButtonGlass";
-            this.toggleButtonGlass.Size = new System.Drawing.Size(88, 49);
-            this.toggleButtonGlass.TabIndex = 11;
-            this.toggleButtonGlass.Text = "Shader Glass app";
-            this.toggleButtonGlass.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.toggleButtonGlass.TextImageRelation = System.Windows.Forms.TextImageRelation.Overlay;
-            this.toggleButtonGlass.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.toggleButtonGlass.ToggledForeColour = System.Drawing.Color.Transparent;
-            this.toggleButtonGlass.ToggledOn = false;
-            this.toggleButtonGlass.UseVisualStyleBackColor = false;
-            this.toggleButtonGlass.Toggled += new System.EventHandler(this.toggleButtonGlass_Toggled);
-            // 
-            // toggleButtonShield
-            // 
-            this.toggleButtonShield.AccessibleName = "Toggle translucent screen covering";
-            this.toggleButtonShield.AutoEllipsis = false;
-            this.toggleButtonShield.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("toggleButtonShield.BackgroundImage")));
-            this.toggleButtonShield.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.toggleButtonShield.DialogResult = System.Windows.Forms.DialogResult.None;
-            this.toggleButtonShield.DisabledColorBlend = System.Drawing.Color.Empty;
-            this.toggleButtonShield.Dock = System.Windows.Forms.DockStyle.Left;
-            this.toggleButtonShield.FlatStyle = System.Windows.Forms.FlatStyle.Standard;
-            this.toggleButtonShield.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(170)))), ((int)(((byte)(170)))), ((int)(((byte)(0)))));
-            this.toggleButtonShield.Image = null;
-            this.toggleButtonShield.ImageAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.toggleButtonShield.ImageIndex = -1;
-            this.toggleButtonShield.ImageKey = "";
-            this.toggleButtonShield.ImageList = null;
-            this.toggleButtonShield.Location = new System.Drawing.Point(140, 0);
-            this.toggleButtonShield.Name = "toggleButtonShield";
-            this.toggleButtonShield.Size = new System.Drawing.Size(81, 49);
-            this.toggleButtonShield.TabIndex = 10;
-            this.toggleButtonShield.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.toggleButtonShield.TextImageRelation = System.Windows.Forms.TextImageRelation.TextAboveImage;
-            this.toggleButtonShield.ToggledBackColour = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.toggleButtonShield.ToggledForeColour = System.Drawing.Color.Transparent;
-            this.toggleButtonShield.ToggledOn = false;
-            this.toggleButtonShield.UseVisualStyleBackColor = false;
-            this.toggleButtonShield.Toggled += new System.EventHandler(this.toggleButtonShield_Toggled);
+            this.panel2.Controls.Add(this.buttonEmergencyClose);
+            this.panel2.Controls.Add(this.labelTooltip);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.panel2.Location = new System.Drawing.Point(0, 307);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(505, 27);
+            this.panel2.TabIndex = 11;
             // 
             // buttonEmergencyClose
             // 
@@ -594,12 +583,23 @@
             this.buttonEmergencyClose.UseVisualStyleBackColor = false;
             this.buttonEmergencyClose.Click += new System.EventHandler(this.buttonEmergencyClose_Click);
             // 
+            // labelTooltip
+            // 
+            this.labelTooltip.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(59)))), ((int)(((byte)(59)))), ((int)(((byte)(59)))));
+            this.labelTooltip.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelTooltip.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelTooltip.Location = new System.Drawing.Point(0, 0);
+            this.labelTooltip.Name = "labelTooltip";
+            this.labelTooltip.Padding = new System.Windows.Forms.Padding(3, 3, 0, 0);
+            this.labelTooltip.Size = new System.Drawing.Size(505, 27);
+            this.labelTooltip.TabIndex = 0;
+            // 
             // Faith
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.ClientSize = new System.Drawing.Size(505, 314);
+            this.ClientSize = new System.Drawing.Size(505, 334);
             this.ControlBox = false;
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.panel1);
@@ -621,15 +621,15 @@
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            this.panel3.ResumeLayout(false);
-            this.panel4.ResumeLayout(false);
-            this.panel2.ResumeLayout(false);
             this.protectorShield.ResumeLayout(false);
             this.flowLayoutShield.ResumeLayout(false);
             this.containerIntensityLimit.ResumeLayout(false);
             this.containerIntensityLimit.PerformLayout();
+            this.panel3.ResumeLayout(false);
             this.protectorGlass.ResumeLayout(false);
             this.flowLayoutGlass.ResumeLayout(false);
+            this.panel4.ResumeLayout(false);
+            this.panel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
