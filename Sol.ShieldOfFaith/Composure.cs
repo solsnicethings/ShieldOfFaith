@@ -201,6 +201,7 @@ namespace Sol.ShieldOfFaith
             try
             {
                 configFileSystem.Items.Clear();
+                configFileSysUnfiltered = null;
                 var added = new Dictionary<string, ListViewItem>(StringComparer.OrdinalIgnoreCase);
 
                 void addfileorsubdir(string fullpath, string rawpath = null, ConfigFunction fnc = 0, FileAttributes attr = 0)
@@ -323,6 +324,7 @@ namespace Sol.ShieldOfFaith
                         addfileorsubdir(e, null, ConfigFunction.DirectoryContents, attr);
                     }
 
+                filelistfilter_Changed(this, EventArgs.Empty);
                 chCfgName.Width = -2;
                 chCfgPath.Width = -2;
             }

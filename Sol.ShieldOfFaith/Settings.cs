@@ -76,23 +76,11 @@ namespace Sol.ShieldOfFaith
         string path;
         Settings included;
 
-        static Settings getRedirectedTo(Settings at, Dictionary<string, Settings> rtoo)
-        {
-            for (; ; )
-            {
-                if (at.included == null || at.path == null)
-                    return at;
-                if (rtoo.ContainsKey(at.path))
-                    return at;
-                if (String.IsNullOrEmpty(at.RedirectSettingsFile))
-                    return at;
-                rtoo.Add(at.path, at);
-                at = at.included;
-            }
-        }
-
         public Settings RedirectedToSettings
-            => string.IsNullOrEmpty(RedirectSettingsFile) ? null : getRedirectedTo(this, new Dictionary<string, Settings>(StringComparer.OrdinalIgnoreCase));
+        {
+            private set;
+            get;
+        }
 
         public bool SaveAndApplyRedirect(string saveAs, string redirectTo)
         {
@@ -686,7 +674,7 @@ namespace Sol.ShieldOfFaith
 
         public bool Load(string path, Dictionary<string, Settings> preloaded = null)
         {
-            path = Path.GetFullPath(path);
+            path = System.IO.Path.GetFullPath(path);
 
             if (preloaded != null)
                 if (preloaded.TryGetValue(path, out var alt))
@@ -697,10 +685,11 @@ namespace Sol.ShieldOfFaith
                     AccumulatedOptionalFiles = alt.AccumulatedOptionalFiles;
                     AccumulatedRequiredFiles = alt.AccumulatedRequiredFiles;
                     AccumulatedResourcePaths = alt.AccumulatedResourcePaths;
+                    RedirectedToSettings = alt.RedirectedToSettings;
+                    included = alt.included;
                     this.path = path;
                     return true;
                 }
-                else preloaded.Add(path, this);
 
             Remove(K_LoadError);
 
@@ -715,12 +704,19 @@ namespace Sol.ShieldOfFaith
                     AccumulatedOptionalFiles = proxy.AccumulatedOptionalFiles;
                     AccumulatedRequiredFiles = proxy.AccumulatedRequiredFiles;
                     AccumulatedResourcePaths = proxy.AccumulatedResourcePaths;
+                    RedirectedToSettings = proxy.RedirectedToSettings;
+                    included = proxy.included;
                     this.path = path;
                     return true;
                 }
                 LoadError = proxy.LoadError;
                 return false;
             }
+
+            if (preloaded != null && !preloaded.ContainsKey(path))
+                preloaded.Add(path, this);
+
+            RedirectedToSettings = null;
 
             try
             {
@@ -730,22 +726,25 @@ namespace Sol.ShieldOfFaith
                     for (string l; (l = r.ReadLine()) != null;)
                     {
                         var s = l.Split(new char[] { ':' }, 2);
-                        if (s.Length == 0)
-                            continue;
                         var e = s[0];
+                        if (s.Length == 1)
+                        {
+                            if (string.IsNullOrWhiteSpace(e))
+                                continue;
+                            e = e.Trim();
+                            if (e[0] == '#')
+                                continue;
+                            k = e;
+                            if (!ContainsKey(k)) Add(k, null);
+                            continue;
+                        }
+
                         if (!string.IsNullOrWhiteSpace(e))
                         {
                             e = e.Trim();
                             if (e[0] == '#')
                                 continue;
                             k = e;
-                        }
-
-                        if (s.Length == 1)
-                        {
-                            if (!ContainsKey(k))
-                                Add(k, null);
-                            continue;
                         }
 
                         if (TryGetValue(k, out var v) == false || v == null)
@@ -773,7 +772,10 @@ namespace Sol.ShieldOfFaith
                     {
                         var p = Program.FindPathTo(refpath, path, pathType == K_extra_data);
                         if (p == null)
-                            LoadError.Add("Unable to find \"" + refpath + "\" while processing config in " + path);
+                        {
+                            if (pathType != K_optional_settings_file)
+                                LoadError.Add("Unable to find \"" + refpath + "\" while processing config in " + path);
+                        }
                         else refpath = p;
                     }
                     if (filesysrefs.TryGetValue(refpath, out var existing))
@@ -794,6 +796,7 @@ namespace Sol.ShieldOfFaith
                     var unkeep = new List<string>();
                     if (!ContainsKey(K_extra_settings_file)) Add(K_extra_settings_file, unkeep);
                     if (!ContainsKey(K_optional_settings_file)) Add(K_optional_settings_file, unkeep);
+                    if (!ContainsKey(K_redirect)) Add(K_redirect, unkeep);
 
                     {
                         if (TryGetValue(K_extra_data, out var l))
@@ -854,6 +857,7 @@ namespace Sol.ShieldOfFaith
                                     Add(cfg.Key, cfg.Value);
                         }
                     }
+                    if (this[K_redirect] == unkeep) Remove(K_redirect);
                     if (this[K_extra_data] == unkeep) Remove(K_extra_data);
                     if (this[K_optional_settings_file] == unkeep) Remove(K_optional_settings_file);
                     if (this[K_extra_settings_file] == unkeep) Remove(K_extra_settings_file);
@@ -895,41 +899,30 @@ namespace Sol.ShieldOfFaith
                     Dictionary<string, List<string>>
                         keepout = new Dictionary<string, List<string>>(StringComparer.Ordinal);
 
-                    foreach (var c in new string[] {K_redirect, K_extra_settings_file, K_optional_settings_file})
+                    Settings r = new Settings();
+                    path = Path.Combine(path, redirect);
+                    if (r.Load(path, preloaded))
+                        RedirectedToSettings = r.RedirectedToSettings ?? r;
+                    else if (File.Exists(path))
+                        LoadError.AddRange(r.LoadError);
+                    else
                     {
-                        if (TryGetValue(c, out var l))
+                        r.RequiredSettings = new string[] { Path.GetDirectoryName(this.path) == Path.GetDirectoryName(path) ? Path.GetFileName(this.path) : this.path };
+                        r.SaveSettingsOnClose = When.Always;
+                        r.SaveStateOnClose = When.Always;
+                        r.LoadError.Clear();
+                        r.LoadError.Add("This file did not exist and was pointed to by a redirect, so it was created.");
+                        if (r.Save(path))
                         {
-                            keepout.Add(c, l);
-                            Remove(c);
+                            preloaded.Remove(r.path);
+                            r.Clear();
+                            if (r.Load(path, preloaded))
+                            {
+                                RedirectedToSettings = r.RedirectedToSettings ?? r;
+                                return true;
+                            }
                         }
-                    }
-
-                    try
-                    {
-                        included = null;
-
-                        Settings r = new Settings();
-                        path = Path.Combine(path, redirect);
-                        if (r.Load(path, preloaded))
-                            included = r;
-                        else if (File.Exists(path))
-                            LoadError.AddRange(r.LoadError);
-                        else
-                        {
-                            r.RequiredSettings = new string[] { Path.GetDirectoryName( this.path) == Path.GetDirectoryName(path) ? Path.GetFileName(this.path) : this.path };
-                            r.SaveSettingsOnClose = When.Always;
-                            r.SaveStateOnClose = When.Always;
-                            r.LoadError.Clear();
-                            r.LoadError.Add("This file did not exist and was pointed to by a redirect, so it was created.");
-                            if (r.Save(path) && r.Load(path, preloaded))
-                                included = r;
-                            else LoadError.Add("Could not create valid redirect file at " + path);
-                        }
-                    }
-                    finally
-                    {
-                        foreach (var c in keepout)
-                            Add(c.Key, c.Value);
+                        LoadError.Add("Could not create valid redirect file at " + path);
                     }
                 }
             }
