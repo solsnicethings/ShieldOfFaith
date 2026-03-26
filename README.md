@@ -37,6 +37,7 @@ Requirements from ShaderGlass:
 Requirements from Shield of Faith:
 
 64-bits windows platform with .NET 4.8
+Visual C++ redistributables (latest - compatible with visual studio 2022)
 
 <br/>
 
